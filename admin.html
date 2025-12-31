@@ -1,420 +1,440 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="si">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Panel - Exam Master</title>
-    <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;900&family=Righteous&display=swap" rel="stylesheet">
     <style>
-        .admin-container {
-            max-width: 900px;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
+            color: #ffffff;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
             margin: 0 auto;
-            padding: 2rem;
+            padding: 20px;
         }
-        
-        .admin-header {
-            text-align: center;
-            margin-bottom: 3rem;
-        }
-        
-        .admin-header h1 {
-            font-family: 'Righteous', cursive;
-            font-size: 2.5rem;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 0.5rem;
-        }
-        
-        .admin-header p {
-            color: var(--text-secondary);
-        }
-        
-        .login-card {
-            background: var(--bg-card);
-            backdrop-filter: blur(20px);
-            border: 1px solid var(--border);
-            border-radius: 20px;
-            padding: 3rem;
-            margin: 0 auto;
-            max-width: 450px;
-        }
-        
-        .login-icon {
-            width: 80px;
-            height: 80px;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            border-radius: 50%;
+
+        /* Login Section */
+        #loginSection {
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 2rem;
-            color: white;
-            margin: 0 auto 2rem;
+            min-height: 100vh;
         }
-        
+
+        .login-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 400px;
+            width: 100%;
+        }
+
+        .login-card h2 {
+            text-align: center;
+            margin-bottom: 30px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
         .form-group {
-            margin-bottom: 1.5rem;
+            margin-bottom: 20px;
         }
-        
+
         .form-group label {
             display: block;
-            margin-bottom: 0.5rem;
-            color: var(--text-secondary);
-            font-size: 0.9rem;
+            margin-bottom: 8px;
+            color: #b8c1ec;
         }
-        
-        .form-input {
+
+        .form-group input {
             width: 100%;
-            padding: 14px;
-            background: rgba(0, 0, 0, 0.3);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            color: var(--text-primary);
+            padding: 12px 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            color: #ffffff;
             font-size: 1rem;
         }
-        
-        .form-input:focus {
-            outline: none;
-            border-color: var(--primary);
-        }
-        
-        .admin-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 2rem;
-            margin-top: 2rem;
-        }
-        
-        .admin-card {
-            background: var(--bg-card);
-            backdrop-filter: blur(20px);
-            border: 1px solid var(--border);
-            border-radius: 20px;
-            padding: 2rem;
-        }
-        
-        .admin-card h3 {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 1.5rem;
-            font-size: 1.3rem;
-        }
-        
-        .admin-card h3 i {
-            color: var(--primary);
-            font-size: 1.5rem;
-        }
-        
-        .file-upload {
-            border: 2px dashed var(--border);
-            border-radius: 12px;
-            padding: 2rem;
-            text-align: center;
+
+        .btn-primary {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-size: 1rem;
+            font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
-            margin-bottom: 1rem;
         }
-        
-        .file-upload:hover {
-            border-color: var(--primary);
-            background: rgba(102, 126, 234, 0.05);
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.5);
         }
-        
-        .file-upload i {
-            font-size: 2rem;
-            color: var(--primary);
-            margin-bottom: 0.5rem;
-        }
-        
-        .file-upload input {
+
+        /* Dashboard Section */
+        #dashboardSection {
             display: none;
         }
-        
-        .exam-list-item {
+
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+        }
+
+        .dashboard-header h1 {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .btn-logout {
+            background: #ff6b6b;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 10px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-logout:hover {
+            background: #ff5252;
+        }
+
+        /* Admin Grid */
+        .admin-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .admin-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 25px;
+        }
+
+        .admin-card h3 {
+            margin-bottom: 20px;
+            color: #667eea;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* Form Elements */
+        input, textarea, select {
+            width: 100%;
+            padding: 12px 15px;
+            margin-bottom: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            color: #ffffff;
+            font-size: 1rem;
+        }
+
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border: none;
+            padding: 12px 25px;
+            border-radius: 10px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        /* List Items */
+        .list-item {
             background: rgba(0, 0, 0, 0.2);
-            padding: 1rem;
-            border-radius: 12px;
-            margin-bottom: 0.75rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
-        
-        .exam-info h4 {
-            margin-bottom: 0.25rem;
+
+        .list-item-content {
+            flex: 1;
         }
-        
-        .exam-info p {
-            font-size: 0.85rem;
-            color: var(--text-secondary);
-        }
-        
-        .exam-actions {
+
+        .list-item-actions {
             display: flex;
-            gap: 0.5rem;
+            gap: 10px;
         }
-        
-        .icon-btn-small {
-            width: 35px;
-            height: 35px;
-            border: none;
+
+        .btn-icon {
             background: rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            color: var(--text-primary);
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            color: white;
             cursor: pointer;
             transition: all 0.3s ease;
         }
-        
-        .icon-btn-small:hover {
-            background: var(--primary);
-            transform: scale(1.1);
+
+        .btn-icon:hover {
+            background: rgba(255, 255, 255, 0.2);
         }
-        
+
+        .btn-danger {
+            background: #ff6b6b;
+        }
+
+        .btn-success {
+            background: #38ef7d;
+        }
+
+        /* Statistics */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: -100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.95);
+            color: #0a0e27;
+            padding: 15px 30px;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+            transition: bottom 0.3s ease;
+            z-index: 10000;
+        }
+
+        .toast.show {
+            bottom: 30px;
+        }
+
+        /* Loading Overlay */
         .loading-overlay {
             position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.9);
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
             display: none;
-            justify-content: center;
             align-items: center;
+            justify-content: center;
             z-index: 9999;
-            flex-direction: column;
         }
-        
+
         .loading-overlay.active {
             display: flex;
         }
-        
+
         .spinner {
-            width: 60px;
-            height: 60px;
-            border: 4px solid rgba(255, 255, 255, 0.1);
-            border-top-color: var(--primary);
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top-color: #667eea;
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }
-        
+
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
-        
-        .back-link {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            color: var(--text-secondary);
-            text-decoration: none;
-            margin-bottom: 2rem;
-            transition: color 0.3s ease;
-        }
-        
-        .back-link:hover {
-            color: var(--primary);
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .admin-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .list-item {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .list-item-actions {
+                width: 100%;
+                justify-content: center;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="loading-overlay" id="loadingOverlay">
-        <div class="spinner"></div>
-        <p style="color: white; margin-top: 1rem;">Processing...</p>
+    <!-- Login Section -->
+    <div id="loginSection">
+        <div class="login-card">
+            <h2><i class="fas fa-shield-alt"></i> Admin Login</h2>
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="adminEmail" placeholder="admin@exammaster.lk">
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="adminPassword" placeholder="Enter password">
+            </div>
+            <button class="btn-primary" onclick="adminLogin()">
+                <i class="fas fa-sign-in-alt"></i> Login
+            </button>
+        </div>
     </div>
 
-    <div class="admin-container">
-        <a href="index.html" class="back-link">
-            <i class="fas fa-arrow-left"></i>
-            Back to Home
-        </a>
-
-        <div class="admin-header">
-            <h1><i class="fas fa-shield-alt"></i> Admin Panel</h1>
-            <p>Manage exams, notifications, and content</p>
-        </div>
-
-        <!-- Login Section -->
-        <div id="loginSection">
-            <div class="login-card">
-                <div class="login-icon">
-                    <i class="fas fa-lock"></i>
-                </div>
-                
-                <div class="form-group">
-                    <label for="adminEmail">Email</label>
-                    <input type="email" id="adminEmail" class="form-input" placeholder="admin@example.com">
-                </div>
-                
-                <div class="form-group">
-                    <label for="adminPassword">Password</label>
-                    <input type="password" id="adminPassword" class="form-input" placeholder="Enter password">
-                </div>
-                
-                <button onclick="adminLogin()" class="btn-primary">
-                    <i class="fas fa-sign-in-alt"></i> Secure Login
-                </button>
-                
-                <p style="text-align: center; margin-top: 1rem; font-size: 0.85rem; color: var(--text-secondary);">
-                    Protected by secure authentication
-                </p>
-            </div>
-        </div>
-
-        <!-- Dashboard Section -->
-        <div id="dashboardSection" style="display: none;">
-            <div style="text-align: right; margin-bottom: 2rem;">
-                <button onclick="logout()" class="btn-secondary">
+    <!-- Dashboard Section -->
+    <div id="dashboardSection">
+        <div class="container">
+            <!-- Header -->
+            <div class="dashboard-header">
+                <h1><i class="fas fa-dashboard"></i> Admin Dashboard</h1>
+                <button class="btn-logout" onclick="logout()">
                     <i class="fas fa-sign-out-alt"></i> Logout
                 </button>
             </div>
 
+            <!-- Statistics -->
+            <div class="admin-card">
+                <h3><i class="fas fa-chart-line"></i> Statistics</h3>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="totalExams">0</div>
+                        <div>Total Exams</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="totalNotifs">0</div>
+                        <div>Notifications</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="totalQuotes">0</div>
+                        <div>Quotes</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Grid -->
             <div class="admin-grid">
-                <!-- Manage Exams -->
+                <!-- Exam Management -->
                 <div class="admin-card">
-                    <h3><i class="fas fa-calendar-alt"></i> Manage Exams</h3>
-                    
-                    <div class="form-group">
-                        <input type="text" id="examName" class="form-input" placeholder="Exam Name (e.g., 2026 A/L)">
-                    </div>
-                    
-                    <div class="form-group">
-                        <input type="datetime-local" id="examDate" class="form-input">
-                    </div>
-                    
-                    <button onclick="saveExam()" class="btn-primary">
+                    <h3><i class="fas fa-calendar"></i> Manage Exams</h3>
+                    <input type="text" id="examName" placeholder="Exam Name (e.g., 2026 A/L)">
+                    <input type="text" id="examYear" placeholder="Year (e.g., 2026)">
+                    <input type="text" id="examType" placeholder="Type (A/L or O/L)">
+                    <input type="datetime-local" id="examDate">
+                    <input type="text" id="examIcon" placeholder="Icon (e.g., 📚)">
+                    <input type="text" id="examColor" placeholder="Color (e.g., #667eea)">
+                    <label style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
+                        <input type="checkbox" id="examFeatured" style="width: auto;">
+                        <span>Featured Exam</span>
+                    </label>
+                    <button onclick="saveExam()">
                         <i class="fas fa-plus"></i> Add Exam
                     </button>
-                    
-                    <div id="examList" style="margin-top: 1.5rem;"></div>
+                    <div id="examList" style="margin-top: 20px;"></div>
                 </div>
 
-                <!-- Manage Exams -->
-<div class="admin-card">
-    <h3><i class="fas fa-calendar-alt"></i> Manage Exams & Countdown</h3>
-    
-    <div class="form-group">
-        <label for="examName">Exam Name</label>
-        <input type="text" id="examName" class="form-input" placeholder="e.g., 2026 A/L Examination">
-    </div>
-    
-    <div class="form-group">
-        <label for="batchType">Batch Type</label>
-        <select id="batchType" class="form-input">
-            <option value="al">Advanced Level (A/L)</option>
-            <option value="ol">Ordinary Level (O/L)</option>
-        </select>
-    </div>
-    
-    <div class="form-group">
-        <label for="batchYear">Batch Year</label>
-        <input type="text" id="batchYear" class="form-input" placeholder="e.g., 2025, 2026, 2027">
-    </div>
-    
-    <div class="form-group">
-        <label for="examDate">Exam Date & Time</label>
-        <input type="datetime-local" id="examDate" class="form-input">
-    </div>
-    
-    <div class="form-group">
-        <label for="examStatus">Status</label>
-        <select id="examStatus" class="form-input">
-            <option value="upcoming">Upcoming</option>
-            <option value="live">Live</option>
-            <option value="completed">Completed</option>
-        </select>
-    </div>
-    
-    <button onclick="saveExam()" class="btn-primary">
-        <i class="fas fa-plus"></i> Add/Update Exam
-    </button>
-    
-    <div id="examList" style="margin-top: 1.5rem;"></div>
-</div>
-                <!-- Send Notifications -->
+                <!-- Notification Management -->
                 <div class="admin-card">
-                    <h3><i class="fas fa-bullhorn"></i> Send Notification</h3>
-                    
-                    <div class="form-group">
-                        <input type="text" id="notifTitle" class="form-input" placeholder="Notification Title">
-                    </div>
-                    
-                    <div class="form-group">
-                        <textarea id="notifMessage" class="form-input" rows="3" placeholder="Notification message..."></textarea>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>Image (Optional)</label>
-                        <div class="file-upload" onclick="document.getElementById('imageFile').click()">
-                            <i class="fas fa-image"></i>
-                            <p>Click to upload image</p>
-                            <input type="file" id="imageFile" accept="image/*">
-                        </div>
-                        <div id="imagePreview"></div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>PDF (Optional)</label>
-                        <div class="file-upload" onclick="document.getElementById('pdfFile').click()">
-                            <i class="fas fa-file-pdf"></i>
-                            <p>Click to upload PDF</p>
-                            <input type="file" id="pdfFile" accept="application/pdf">
-                        </div>
-                        <div id="pdfPreview"></div>
-                    </div>
-                    
-                    <button onclick="sendNotification()" class="btn-primary">
-                        <i class="fas fa-paper-plane"></i> Send to All Users
+                    <h3><i class="fas fa-bell"></i> Manage Notifications</h3>
+                    <input type="text" id="notifTitle" placeholder="Title">
+                    <textarea id="notifMessage" placeholder="Message"></textarea>
+                    <input type="file" id="notifImage" accept="image/*">
+                    <input type="file" id="notifPDF" accept=".pdf">
+                    <label style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
+                        <input type="checkbox" id="showUntilDismissed" style="width: auto;">
+                        <span>Show until I turn it off</span>
+                    </label>
+                    <button onclick="saveNotification()">
+                        <i class="fas fa-paper-plane"></i> Send Notification
                     </button>
+                    <div id="notifList" style="margin-top: 20px;"></div>
                 </div>
 
-                <!-- Daily Quotes -->
+                <!-- Quote Management -->
                 <div class="admin-card">
-                    <h3><i class="fas fa-quote-right"></i> Daily Quotes</h3>
-                    
-                    <div class="form-group">
-                        <textarea id="quoteText" class="form-input" rows="4" placeholder="Enter motivational quote..."></textarea>
-                    </div>
-                    
-                    <button onclick="addQuote()" class="btn-primary">
+                    <h3><i class="fas fa-quote-right"></i> Manage Quotes</h3>
+                    <textarea id="quoteText" placeholder="Quote text"></textarea>
+                    <input type="text" id="quoteAuthor" placeholder="Author (optional)">
+                    <select id="quoteCategory">
+                        <option value="motivation">Motivation</option>
+                        <option value="success">Success</option>
+                        <option value="perseverance">Perseverance</option>
+                        <option value="education">Education</option>
+                    </select>
+                    <button onclick="saveQuote()">
                         <i class="fas fa-plus"></i> Add Quote
                     </button>
-                    
-                    <p style="margin-top: 1rem; font-size: 0.85rem; color: var(--text-secondary);">
-                        Quotes rotate daily for students
-                    </p>
-                </div>
-
-                <!-- Statistics -->
-                <div class="admin-card">
-                    <h3><i class="fas fa-chart-bar"></i> Statistics</h3>
-                    
-                    <div class="stat-item" style="margin-bottom: 1rem;">
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                            <span>Total Exams</span>
-                            <strong id="totalExams">0</strong>
-                        </div>
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                            <span>Active Notifications</span>
-                            <strong id="totalNotifs">0</strong>
-                        </div>
-                        <div style="display: flex; justify-content: space-between;">
-                            <span>Total Quotes</span>
-                            <strong id="totalQuotes">0</strong>
-                        </div>
-                    </div>
-                    
-                    <button onclick="refreshStats()" class="btn-secondary">
-                        <i class="fas fa-sync"></i> Refresh Stats
-                    </button>
+                    <div id="quoteList" style="margin-top: 20px;"></div>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- Toast -->
     <div id="toast" class="toast"></div>
 
     <script type="module" src="admin.js"></script>
 </body>
 </html>
-
