@@ -1,4 +1,4 @@
-// ==========================================
+// ================================
 // EXAM MASTER - Complete JavaScript
 // ==========================================
 
@@ -8,8 +8,8 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 // CONFIGURATION
 // ==========================================
 const SUPABASE_CONFIG = {
-    url: 'https://YOUR_PROJECT.supabase.co', // ඔබේ Supabase URL
-    anonKey: 'YOUR_ANON_KEY_HERE' // ඔබේ anon key
+    url: 'https://nstnkxtxlqelwnefkmaj.supabase.co', // ඔබේ Supabase URL
+    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5zdG5reHR4bHFlbHduZWZrbWFqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2Njg0NTc0OCwiZXhwIjoyMDgyNDIxNzQ4fQ.7nxY8FIR05sbZ33e4-hpZx6n8l-WA-gnlk2pOwxo2z4' // ඔබේ anon key
 };
 
 const CLAUDE_API_KEY = 'YOUR_CLAUDE_API_KEY_HERE'; // ඔබේ Claude API key
@@ -677,3 +677,4 @@ window.showAbout = showAbout;
 window.showPrivacy = showPrivacy;
 
 console.log('🎓 Exam Master loaded successfully!');
+
