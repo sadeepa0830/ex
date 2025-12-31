@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exam Master SL - ඔබේ විභාග සහකරු</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="manifest" href="manifest.json">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;900&family=Righteous&display=swap" rel="stylesheet">
+    <meta name="theme-color" content="#0a0e27">
+    <meta name="description" content="Sri Lanka's most advanced exam countdown and study assistant">
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loadingScreen" class="loading-screen">
+        <div class="loader-content">
+            <div class="loader-ring"></div>
+            <h2>EXAM MASTER</h2>
+            <p>Loading your study companion...</p>
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="logo">
+                <i class="fas fa-graduation-cap"></i>
+                <span>EXAM<strong>MASTER</strong></span>
+            </div>
+            <div class="nav-actions">
+                <button class="icon-btn" onclick="toggleThemePanel()" title="Themes">
+                    <i class="fas fa-palette"></i>
+                </button>
+                <button class="icon-btn" onclick="toggleProfile()" title="Profile">
+                    <i class="fas fa-user-circle"></i>
+                </button>
+                <button class="icon-btn" id="installBtn" style="display:none;" onclick="installPWA()" title="Install App">
+                    <i class="fas fa-download"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Theme Selector Panel -->
+    <div id="themePanel" class="theme-panel">
+        <div class="theme-panel-content">
+            <h3>Choose Your Theme</h3>
+            <div class="theme-grid">
+                <div class="theme-card" onclick="setTheme('default')" data-theme="default">
+                    <div class="theme-preview" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%)"></div>
+                    <span>Cyber Purple</span>
+                </div>
+                <div class="theme-card" onclick="setTheme('ocean')" data-theme="ocean">
+                    <div class="theme-preview" style="background: linear-gradient(135deg, #2e3192 0%, #1bffff 100%)"></div>
+                    <span>Ocean Blue</span>
+                </div>
+                <div class="theme-card" onclick="setTheme('sunset')" data-theme="sunset">
+                    <div class="theme-preview" style="background: linear-gradient(135deg, #ff6b6b 0%, #feca57 100%)"></div>
+                    <span>Sunset Glow</span>
+                </div>
+                <div class="theme-card" onclick="setTheme('forest')" data-theme="forest">
+                    <div class="theme-preview" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%)"></div>
+                    <span>Forest Green</span>
+                </div>
+                <div class="theme-card" onclick="setTheme('dark')" data-theme="dark">
+                    <div class="theme-preview" style="background: linear-gradient(135deg, #1e1e1e 0%, #434343 100%)"></div>
+                    <span>Dark Mode</span>
+                </div>
+                <div class="theme-card" onclick="setTheme('gold')" data-theme="gold">
+                    <div class="theme-preview" style="background: linear-gradient(135deg, #f7971e 0%, #ffd200 100%)"></div>
+                    <span>Golden Hour</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Profile Panel -->
+    <div id="profilePanel" class="profile-panel">
+        <div class="profile-content">
+            <div class="profile-header">
+                <div class="avatar-selector">
+                    <img id="currentAvatar" src="https://api.dicebear.com/7.x/avataaars/svg?seed=student" alt="Avatar">
+                    <button class="change-avatar-btn" onclick="changeAvatar()">
+                        <i class="fas fa-camera"></i>
+                    </button>
+                </div>
+                <input type="text" id="userName" placeholder="Your Name" class="profile-input">
+            </div>
+            <div class="profile-stats">
+                <div class="stat-item">
+                    <i class="fas fa-calendar-check"></i>
+                    <span id="studyStreak">0 Day Streak</span>
+                </div>
+                <div class="stat-item">
+                    <i class="fas fa-clock"></i>
+                    <span id="totalStudyTime">0h Study Time</span>
+                </div>
+            </div>
+            <button class="btn-primary" onclick="saveProfile()">Save Profile</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Alert Section -->
+        <div id="alertSection" class="alert-section" style="display:none;">
+            <div class="alert-card">
+                <div class="alert-content">
+                    <div class="alert-icon">
+                        <i class="fas fa-bell"></i>
+                    </div>
+                    <div class="alert-text">
+                        <h3 id="alertTitle">New Notification</h3>
+                        <p id="alertMessage">Loading...</p>
+                        <div id="alertImage" style="display:none;">
+                            <img id="alertImg" src="" alt="Alert Image">
+                        </div>
+                        <div id="alertButtons" style="display:none; margin-top:15px;">
+                            <a id="alertPdfBtn" href="#" target="_blank" class="btn-secondary">
+                                <i class="fas fa-file-pdf"></i> Download PDF
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <button class="alert-close" onclick="closeAlert()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Countdown Card -->
+        <div class="hero-section">
+            <div class="countdown-card">
+                <div class="card-glow"></div>
+                <h1 id="examTitle" class="exam-title">Loading Your Exam...</h1>
+                
+                <!-- Mobile: 2x2 Grid, Desktop: 1x4 Row -->
+                <div class="countdown-grid">
+                    <div class="countdown-row">
+                        <div class="time-unit">
+                            <div class="time-value" id="years">0</div>
+                            <div class="time-label">Years</div>
+                        </div>
+                        <div class="time-unit">
+                            <div class="time-value" id="months">0</div>
+                            <div class="time-label">Months</div>
+                        </div>
+                    </div>
+                    <div class="countdown-row">
+                        <div class="time-unit">
+                            <div class="time-value" id="days">00</div>
+                            <div class="time-label">Days</div>
+                        </div>
+                        <div class="time-unit">
+                            <div class="time-value" id="hours">00</div>
+                            <div class="time-label">Hours</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="quote-section">
+                    <i class="fas fa-quote-left quote-icon"></i>
+                    <p id="dailyQuote" class="daily-quote">Loading motivation...</p>
+                    <i class="fas fa-quote-right quote-icon"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Feature Cards Grid -->
+        <div class="features-grid">
+            <!-- AI Assistant Card -->
+            <div class="feature-card ai-card">
+                <div class="card-header">
+                    <i class="fas fa-robot"></i>
+                    <h2>AI Study Assistant</h2>
+                </div>
+                <div class="ai-chat-box" id="aiChatBox">
+                    <div class="ai-message ai-message-bot">
+                        <div class="message-avatar">
+                            <i class="fas fa-robot"></i>
+                        </div>
+                        <div class="message-content">
+                            Hello! I'm your AI study assistant. Ask me anything about your subjects, study tips, or exam strategies! 📚
+                        </div>
+                    </div>
+                </div>
+                <div class="ai-input-area">
+                    <input type="text" id="aiInput" placeholder="Ask me anything..." class="ai-input">
+                    <button onclick="sendAIMessage()" class="ai-send-btn">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+                <div class="ai-suggestions">
+                    <button onclick="askAI('How do I manage time during exams?')">Time Management</button>
+                    <button onclick="askAI('Give me study tips')">Study Tips</button>
+                    <button onclick="askAI('How to reduce exam stress?')">Reduce Stress</button>
+                </div>
+            </div>
+
+            <!-- Study Timer Card -->
+            <div class="feature-card timer-card">
+                <div class="card-header">
+                    <i class="fas fa-clock"></i>
+                    <h2>Study Timer</h2>
+                </div>
+                <div class="timer-display">
+                    <div class="timer-circle">
+                        <svg class="timer-svg" viewBox="0 0 200 200">
+                            <circle class="timer-bg" cx="100" cy="100" r="90"></circle>
+                            <circle class="timer-progress" id="timerProgress" cx="100" cy="100" r="90"></circle>
+                        </svg>
+                        <div class="timer-time" id="timerDisplay">25:00</div>
+                    </div>
+                </div>
+                <div class="timer-controls">
+                    <button onclick="startTimer()" class="timer-btn start-btn" id="startBtn">
+                        <i class="fas fa-play"></i> Start
+                    </button>
+                    <button onclick="pauseTimer()" class="timer-btn pause-btn" id="pauseBtn" style="display:none;">
+                        <i class="fas fa-pause"></i> Pause
+                    </button>
+                    <button onclick="resetTimer()" class="timer-btn reset-btn">
+                        <i class="fas fa-redo"></i> Reset
+                    </button>
+                </div>
+                <div class="timer-stats">
+                    <div class="stat">
+                        <span>Today</span>
+                        <strong id="todayTime">0h 0m</strong>
+                    </div>
+                    <div class="stat">
+                        <span>Total</span>
+                        <strong id="totalTime">0h 0m</strong>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Offline Status Card -->
+            <div class="feature-card offline-card">
+                <div class="card-header">
+                    <i class="fas fa-wifi"></i>
+                    <h2>Offline Mode</h2>
+                </div>
+                <div class="offline-status">
+                    <div class="status-indicator" id="connectionStatus">
+                        <div class="status-dot online"></div>
+                        <span>Connected</span>
+                    </div>
+                    <p class="status-text">All features available offline after first load</p>
+                    <div class="offline-features">
+                        <div class="offline-item">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Timer works offline</span>
+                        </div>
+                        <div class="offline-item">
+                            <i class="fas fa-check-circle"></i>
+                            <span>AI cached responses</span>
+                        </div>
+                        <div class="offline-item">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Data syncs when online</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Share Section -->
+        <div class="share-section">
+            <h3>Share with Friends</h3>
+            <p>Help your friends prepare for exams too!</p>
+            <div class="share-buttons">
+                <button onclick="shareOn('whatsapp')" class="share-btn whatsapp">
+                    <i class="fab fa-whatsapp"></i> WhatsApp
+                </button>
+                <button onclick="shareOn('facebook')" class="share-btn facebook">
+                    <i class="fab fa-facebook"></i> Facebook
+                </button>
+                <button onclick="shareOn('twitter')" class="share-btn twitter">
+                    <i class="fab fa-twitter"></i> Twitter
+                </button>
+                <button onclick="copyLink()" class="share-btn copy">
+                    <i class="fas fa-link"></i> Copy Link
+                </button>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="footer-content">
+                <div class="footer-top">
+                    <div class="footer-logo">
+                        <i class="fas fa-graduation-cap"></i>
+                        <h3>EXAM<strong>MASTER</strong></h3>
+                        <p>Your Complete Study Companion</p>
+                    </div>
+                    <div class="footer-links-group">
+                        <div class="footer-column">
+                            <h4>Quick Links</h4>
+                            <a href="#"><i class="fas fa-home"></i> Home</a>
+                            <a href="admin.html"><i class="fas fa-shield-alt"></i> Admin Panel</a>
+                            <a href="#" onclick="showAbout()"><i class="fas fa-info-circle"></i> About Us</a>
+                        </div>
+                        <div class="footer-column">
+                            <h4>Resources</h4>
+                            <a href="#"><i class="fas fa-book"></i> Study Materials</a>
+                            <a href="#"><i class="fas fa-file-alt"></i> Past Papers</a>
+                            <a href="#"><i class="fas fa-lightbulb"></i> Study Tips</a>
+                        </div>
+                        <div class="footer-column">
+                            <h4>Legal</h4>
+                            <a href="#" onclick="showPrivacy()"><i class="fas fa-shield-alt"></i> Privacy Policy</a>
+                            <a href="#"><i class="fas fa-file-contract"></i> Terms of Service</a>
+                            <a href="#"><i class="fas fa-cookie-bite"></i> Cookie Policy</a>
+                        </div>
+                        <div class="footer-column">
+                            <h4>Connect</h4>
+                            <a href="#"><i class="fab fa-facebook"></i> Facebook</a>
+                            <a href="#"><i class="fab fa-twitter"></i> Twitter</a>
+                            <a href="#"><i class="fab fa-instagram"></i> Instagram</a>
+                            <a href="#"><i class="fab fa-youtube"></i> YouTube</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="footer-bottom">
+                    <div class="footer-copyright">
+                        <p>© 2025 Exam Master SL. All rights reserved.</p>
+                        <p>Made in <i class="fas fa-heart" style="color: #ff6b6b;"></i> sadeepa lakshan</p>
+                    </div>
+                    <div class="footer-badges">
+                        <span class="badge"><i class="fas fa-lock"></i> Secure</span>
+                        <span class="badge"><i class="fas fa-mobile-alt"></i> Mobile Ready</span>
+                        <span class="badge"><i class="fas fa-wifi"></i> Works Offline</span>
+                    </div>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="toast"></div>
+
+    <script type="module" src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - Exam Master</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;900&family=Righteous&display=swap" rel="stylesheet">
+    <style>
+        .admin-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .admin-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+        
+        .admin-header h1 {
+            font-family: 'Righteous', cursive;
+            font-size: 2.5rem;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+        
+        .admin-header p {
+            color: var(--text-secondary);
+        }
+        
+        .login-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 3rem;
+            margin: 0 auto;
+            max-width: 450px;
+        }
+        
+        .login-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            color: white;
+            margin: 0 auto 2rem;
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 14px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-size: 1rem;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+        
+        .admin-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+        
+        .admin-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 2rem;
+        }
+        
+        .admin-card h3 {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 1.5rem;
+            font-size: 1.3rem;
+        }
+        
+        .admin-card h3 i {
+            color: var(--primary);
+            font-size: 1.5rem;
+        }
+        
+        .file-upload {
+            border: 2px dashed var(--border);
+            border-radius: 12px;
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 1rem;
+        }
+        
+        .file-upload:hover {
+            border-color: var(--primary);
+            background: rgba(102, 126, 234, 0.05);
+        }
+        
+        .file-upload i {
+            font-size: 2rem;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+        
+        .file-upload input {
+            display: none;
+        }
+        
+        .exam-list-item {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 1rem;
+            border-radius: 12px;
+            margin-bottom: 0.75rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .exam-info h4 {
+            margin-bottom: 0.25rem;
+        }
+        
+        .exam-info p {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+        
+        .exam-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .icon-btn-small {
+            width: 35px;
+            height: 35px;
+            border: none;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .icon-btn-small:hover {
+            background: var(--primary);
+            transform: scale(1.1);
+        }
+        
+        .loading-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.9);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            flex-direction: column;
+        }
+        
+        .loading-overlay.active {
+            display: flex;
+        }
+        
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            margin-bottom: 2rem;
+            transition: color 0.3s ease;
+        }
+        
+        .back-link:hover {
+            color: var(--primary);
+        }
+    </style>
+</head>
+<body>
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+        <p style="color: white; margin-top: 1rem;">Processing...</p>
+    </div>
+
+    <div class="admin-container">
+        <a href="index.html" class="back-link">
+            <i class="fas fa-arrow-left"></i>
+            Back to Home
+        </a>
+
+        <div class="admin-header">
+            <h1><i class="fas fa-shield-alt"></i> Admin Panel</h1>
+            <p>Manage exams, notifications, and content</p>
+        </div>
+
+        <!-- Login Section -->
+        <div id="loginSection">
+            <div class="login-card">
+                <div class="login-icon">
+                    <i class="fas fa-lock"></i>
+                </div>
+                
+                <div class="form-group">
+                    <label for="adminEmail">Email</label>
+                    <input type="email" id="adminEmail" class="form-input" placeholder="admin@example.com">
+                </div>
+                
+                <div class="form-group">
+                    <label for="adminPassword">Password</label>
+                    <input type="password" id="adminPassword" class="form-input" placeholder="Enter password">
+                </div>
+                
+                <button onclick="adminLogin()" class="btn-primary">
+                    <i class="fas fa-sign-in-alt"></i> Secure Login
+                </button>
+                
+                <p style="text-align: center; margin-top: 1rem; font-size: 0.85rem; color: var(--text-secondary);">
+                    Protected by secure authentication
+                </p>
+            </div>
+        </div>
+
+        <!-- Dashboard Section -->
+        <div id="dashboardSection" style="display: none;">
+            <div style="text-align: right; margin-bottom: 2rem;">
+                <button onclick="logout()" class="btn-secondary">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </div>
+
+            <div class="admin-grid">
+                <!-- Manage Exams -->
+                <div class="admin-card">
+                    <h3><i class="fas fa-calendar-alt"></i> Manage Exams</h3>
+                    
+                    <div class="form-group">
+                        <input type="text" id="examName" class="form-input" placeholder="Exam Name (e.g., 2026 A/L)">
+                    </div>
+                    
+                    <div class="form-group">
+                        <input type="datetime-local" id="examDate" class="form-input">
+                    </div>
+                    
+                    <button onclick="saveExam()" class="btn-primary">
+                        <i class="fas fa-plus"></i> Add Exam
+                    </button>
+                    
+                    <div id="examList" style="margin-top: 1.5rem;"></div>
+                </div>
+
+                <!-- Send Notifications -->
+                <div class="admin-card">
+                    <h3><i class="fas fa-bullhorn"></i> Send Notification</h3>
+                    
+                    <div class="form-group">
+                        <input type="text" id="notifTitle" class="form-input" placeholder="Notification Title">
+                    </div>
+                    
+                    <div class="form-group">
+                        <textarea id="notifMessage" class="form-input" rows="3" placeholder="Notification message..."></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Image (Optional)</label>
+                        <div class="file-upload" onclick="document.getElementById('imageFile').click()">
+                            <i class="fas fa-image"></i>
+                            <p>Click to upload image</p>
+                            <input type="file" id="imageFile" accept="image/*">
+                        </div>
+                        <div id="imagePreview"></div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>PDF (Optional)</label>
+                        <div class="file-upload" onclick="document.getElementById('pdfFile').click()">
+                            <i class="fas fa-file-pdf"></i>
+                            <p>Click to upload PDF</p>
+                            <input type="file" id="pdfFile" accept="application/pdf">
+                        </div>
+                        <div id="pdfPreview"></div>
+                    </div>
+                    
+                    <button onclick="sendNotification()" class="btn-primary">
+                        <i class="fas fa-paper-plane"></i> Send to All Users
+                    </button>
+                </div>
+
+                <!-- Daily Quotes -->
+                <div class="admin-card">
+                    <h3><i class="fas fa-quote-right"></i> Daily Quotes</h3>
+                    
+                    <div class="form-group">
+                        <textarea id="quoteText" class="form-input" rows="4" placeholder="Enter motivational quote..."></textarea>
+                    </div>
+                    
+                    <button onclick="addQuote()" class="btn-primary">
+                        <i class="fas fa-plus"></i> Add Quote
+                    </button>
+                    
+                    <p style="margin-top: 1rem; font-size: 0.85rem; color: var(--text-secondary);">
+                        Quotes rotate daily for students
+                    </p>
+                </div>
+
+                <!-- Statistics -->
+                <div class="admin-card">
+                    <h3><i class="fas fa-chart-bar"></i> Statistics</h3>
+                    
+                    <div class="stat-item" style="margin-bottom: 1rem;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                            <span>Total Exams</span>
+                            <strong id="totalExams">0</strong>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                            <span>Active Notifications</span>
+                            <strong id="totalNotifs">0</strong>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>Total Quotes</span>
+                            <strong id="totalQuotes">0</strong>
+                        </div>
+                    </div>
+                    
+                    <button onclick="refreshStats()" class="btn-secondary">
+                        <i class="fas fa-sync"></i> Refresh Stats
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <script type="module" src="admin.js"></script>
+</body>
+</html>
