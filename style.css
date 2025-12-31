@@ -1427,3 +1427,294 @@ body.no-animations * {
     animation: none !important;
     transition: none !important;
 }
+
+/* ==========================================
+   ENHANCED COUNTDOWN STYLES
+   ========================================== */
+
+/* Batch Selector */
+.batch-selector {
+    margin: 1.5rem 0;
+    position: relative;
+    z-index: 2;
+}
+
+.batch-tabs {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.batch-tab {
+    padding: 10px 20px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    font-size: 0.9rem;
+    font-weight: 500;
+    min-width: 120px;
+    text-align: center;
+}
+
+.batch-tab:hover {
+    background: var(--bg-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px var(--shadow);
+}
+
+.batch-tab.active {
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    color: white;
+    border-color: var(--primary);
+    box-shadow: 0 5px 20px var(--glow);
+    transform: translateY(-2px);
+}
+
+.live-dot {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 8px;
+    height: 8px;
+    background: #ff4757;
+    border-radius: 50%;
+    animation: pulse 1.5s ease infinite;
+    box-shadow: 0 0 10px #ff4757;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.7; transform: scale(1.2); }
+}
+
+/* Countdown Grid - 2x2 Layout */
+.countdown-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    gap: 1.5rem;
+    margin: 2.5rem 0;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.time-unit {
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 1.5rem 1rem;
+    text-align: center;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: 140px;
+    backdrop-filter: blur(10px);
+    position: relative;
+    overflow: hidden;
+}
+
+.time-unit::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--primary), var(--secondary));
+}
+
+.time-unit:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 30px var(--glow);
+    border-color: var(--primary);
+}
+
+.time-value {
+    font-size: 3rem;
+    font-weight: 900;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1;
+    margin-bottom: 5px;
+    font-family: 'Poppins', sans-serif;
+}
+
+.time-label {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    font-weight: 600;
+    margin-top: 5px;
+}
+
+/* Countdown Status */
+.countdown-status {
+    text-align: center;
+    margin: 1rem 0;
+}
+
+/* Mobile Responsive for Countdown */
+@media (max-width: 768px) {
+    .countdown-grid {
+        grid-template-columns: repeat(2, 1fr);
+        grid-template-rows: repeat(2, auto);
+        gap: 1rem;
+        max-width: 100%;
+    }
+    
+    .time-unit {
+        min-height: 110px;
+        padding: 1rem 0.5rem;
+    }
+    
+    .time-value {
+        font-size: 2.2rem;
+    }
+    
+    .time-label {
+        font-size: 0.8rem;
+        letter-spacing: 1px;
+    }
+    
+    .batch-tabs {
+        gap: 8px;
+    }
+    
+    .batch-tab {
+        padding: 8px 12px;
+        font-size: 0.8rem;
+        min-width: 90px;
+    }
+}
+
+@media (max-width: 480px) {
+    .countdown-grid {
+        gap: 0.75rem;
+    }
+    
+    .time-unit {
+        min-height: 100px;
+    }
+    
+    .time-value {
+        font-size: 2rem;
+    }
+    
+    .batch-tab {
+        padding: 6px 10px;
+        font-size: 0.75rem;
+        min-width: 80px;
+    }
+}
+
+/* Badge styles for admin panel */
+.status-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.live-badge { 
+    background: linear-gradient(135deg, #ff4757, #ff6b81); 
+    color: white; 
+}
+
+.upcoming-badge { 
+    background: linear-gradient(135deg, #2ecc71, #1dd1a1); 
+    color: white; 
+}
+
+.completed-badge { 
+    background: linear-gradient(135deg, #576574, #8395a7); 
+    color: white; 
+}
+
+.al-badge { 
+    background: linear-gradient(135deg, #667eea, #764ba2); 
+    color: white; 
+}
+
+.ol-badge { 
+    background: linear-gradient(135deg, #f093fb, #f5576c); 
+    color: white; 
+}
+
+/* Admin panel enhancements */
+.exam-list-item {
+    background: rgba(0, 0, 0, 0.2);
+    padding: 1.2rem;
+    border-radius: 15px;
+    margin-bottom: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    border: 1px solid var(--border);
+    transition: all 0.3s ease;
+}
+
+.exam-list-item:hover {
+    background: rgba(0, 0, 0, 0.3);
+    border-color: var(--primary);
+    transform: translateY(-2px);
+}
+
+.exam-info h4 {
+    margin-bottom: 0.5rem;
+    font-size: 1.1rem;
+}
+
+.exam-info p {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-top: 0.25rem;
+}
+
+.exam-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.icon-btn-small {
+    width: 35px;
+    height: 35px;
+    border: none;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.icon-btn-small:hover {
+    background: var(--primary);
+    transform: scale(1.1);
+    color: white;
+}
+
+.active-btn {
+    color: #2ecc71;
+}
+
+.inactive-btn {
+    color: #ff4757;
+}
