@@ -1,789 +1,971 @@
 // ==========================================
-// CONFIGURATION - Replace with your Supabase keys
+// ADMIN PANEL - Exam Master (Production with Supabase)
 // ==========================================
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+// ⚠️ REPLACE WITH YOUR SUPABASE CREDENTIALS
 const SUPABASE_CONFIG = {
     url: 'https://nstnkxtxlqelwnefkmaj.supabase.co',
-    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5zdG5reHR4bHFlbHduZWZrbWFqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2Njg0NTc0OCwiZXhwIjoyMDgyNDIxNzQ4fQ.7nxY8FIR05sbZ33e4-hpZx6n8l-WA-gnlk2pOwxo2z4' // Use anon key, NOT service_role key
+    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5zdG5reHR4bHFlbHduZWZrbWFqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2Njg0NTc0OCwiZXhwIjoyMDgyNDIxNzQ4fQ.7nxY8FIR05sbZ33e4-hpZx6n8l-WA-gnlk2pOwxo2z4'
 };
 
-// Check if running locally
-const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+const supabase = createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey);
 
-// ==========================================
-// GLOBAL STATE
-// ==========================================
-let deferredPrompt;
-let timerInterval;
-let timerSeconds = 25 * 60; // 25 minutes
-let timerRunning = false;
-let aiConversation = [];
+// Set to false for production with Supabase
+const DEMO_MODE = false;
 
 // ==========================================
 // INITIALIZATION
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
-    initializeApp();
+    checkAuthStatus();
+    setupFileUploads();
 });
 
-async function initializeApp() {
-    // Show loading screen
-    setTimeout(() => {
-        document.getElementById('loadingScreen').style.display = 'none';
-    }, 2000);
-
-    // Load saved preferences
-    loadTheme();
-    loadProfile();
-    loadTimerStats();
-    
-    // Initialize features
-    setupCountdown();
-    loadDailyQuote();
-    loadNotifications();
-    setupPWA();
-    setupOfflineMode();
-    checkConnection();
-    setupEventListeners();
-    
-    // Load AI conversation history
-    loadAIHistory();
-}
-
 // ==========================================
-// THEME MANAGEMENT
+// AUTHENTICATION
 // ==========================================
-function setTheme(theme) {
-    document.body.className = theme === 'default' ? '' : theme;
-    localStorage.setItem('exam-master-theme', theme);
-    showToast('Theme changed successfully! ✨');
-    toggleThemePanel();
-}
+async function checkAuthStatus() {
+    if (DEMO_MODE) {
+        const isLoggedIn = sessionStorage.getItem('admin-logged-in');
+        if (isLoggedIn === 'true') {
+            showDashboard();
+        }
+        return;
+    }
 
-function loadTheme() {
-    const saved = localStorage.getItem('exam-master-theme');
-    if (saved && saved !== 'default') {
-        document.body.className = saved;
+    // Production: Check Supabase session
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+        showDashboard();
     }
 }
 
-function toggleThemePanel() {
-    const panel = document.getElementById('themePanel');
-    const profilePanel = document.getElementById('profilePanel');
+async function adminLogin() {
+    const email = document.getElementById('adminEmail').value.trim();
+    const password = document.getElementById('adminPassword').value.trim();
     
-    // Close profile if open
-    profilePanel.classList.remove('active');
-    
-    panel.classList.toggle('active');
-}
-
-// ==========================================
-// PROFILE MANAGEMENT
-// ==========================================
-function toggleProfile() {
-    const panel = document.getElementById('profilePanel');
-    const themePanel = document.getElementById('themePanel');
-    
-    // Close theme panel if open
-    themePanel.classList.remove('active');
-    
-    panel.classList.toggle('active');
-}
-
-function loadProfile() {
-    const name = localStorage.getItem('exam-master-username');
-    const avatar = localStorage.getItem('exam-master-avatar');
-    
-    if (name) {
-        document.getElementById('userName').value = name;
+    if (!email || !password) {
+        showToast('Please enter both email and password');
+        return;
     }
     
-    if (avatar) {
-        document.getElementById('currentAvatar').src = avatar;
-    }
+    showLoading(true);
     
-    updateProfileStats();
-}
-
-function saveProfile() {
-    const name = document.getElementById('userName').value.trim();
-    
-    if (name) {
-        localStorage.setItem('exam-master-username', name);
-        showToast('Profile saved! 👤');
-        toggleProfile();
+    if (DEMO_MODE) {
+        // Demo mode
+        setTimeout(() => {
+            if (email === 'admin@exammaster.lk' && password === 'admin123') {
+                sessionStorage.setItem('admin-logged-in', 'true');
+                showLoading(false);
+                showDashboard();
+                showToast('Login successful! Welcome Admin 👋');
+            } else {
+                showLoading(false);
+                showToast('Invalid credentials. Try: admin@exammaster.lk / admin123');
+            }
+        }, 1500);
     } else {
-        showToast('Please enter your name');
+        // Production: Supabase authentication
+        try {
+            const { data, error } = await supabase.auth.signInWithPassword({
+                email: email,
+                password: password
+            });
+            
+            showLoading(false);
+            
+            if (error) {
+                showToast('Login failed: ' + error.message);
+                console.error('Login error:', error);
+            } else {
+                showDashboard();
+                showToast('Login successful! Welcome Admin 👋');
+            }
+        } catch (err) {
+            showLoading(false);
+            showToast('An error occurred during login');
+            console.error('Login exception:', err);
+        }
     }
 }
 
-function changeAvatar() {
-    const seeds = ['student', 'felix', 'aneka', 'alex', 'sam', 'max', 'lucy', 'charlie'];
-    const randomSeed = seeds[Math.floor(Math.random() * seeds.length)];
-    const avatarUrl = `https://api.dicebear.com/7.x/avataaars/svg?seed=${randomSeed}`;
+async function logout() {
+    if (DEMO_MODE) {
+        sessionStorage.removeItem('admin-logged-in');
+    } else {
+        // Production: Sign out from Supabase
+        await supabase.auth.signOut();
+    }
     
-    document.getElementById('currentAvatar').src = avatarUrl;
-    localStorage.setItem('exam-master-avatar', avatarUrl);
-    showToast('Avatar changed! 🎨');
+    document.getElementById('dashboardSection').style.display = 'none';
+    document.getElementById('loginSection').style.display = 'block';
+    showToast('Logged out successfully');
 }
 
-function updateProfileStats() {
-    const streak = localStorage.getItem('exam-master-streak') || 0;
-    const totalTime = localStorage.getItem('exam-master-total-time') || 0;
+function showDashboard() {
+    document.getElementById('loginSection').style.display = 'none';
+    document.getElementById('dashboardSection').style.display = 'block';
     
-    document.getElementById('studyStreak').textContent = `${streak} Day Streak`;
-    document.getElementById('totalStudyTime').textContent = formatTime(parseInt(totalTime));
+    loadExams();
+    loadNotificationsForAdmin();
+    refreshStats();
 }
 
 // ==========================================
-// COUNTDOWN TIMER
+// ENHANCED EXAM MANAGEMENT WITH COUNTDOWN SUPPORT
 // ==========================================
-async function setupCountdown() {
-    let examData = null;
+async function saveExam() {
+    const batchType = document.getElementById('batchType').value;
+    const batchYear = document.getElementById('batchYear').value.trim();
+    const date = document.getElementById('examDate').value;
+    const status = document.getElementById('examStatus').value;
+    const examName = document.getElementById('examName').value.trim();
     
-    // Try to load from Supabase first
-    if (typeof supabase !== 'undefined') {
+    if (!batchYear || !date || !examName) {
+        showToast('Please fill in all exam details');
+        return;
+    }
+    
+    // Create batch name
+    const batchName = examName || `${batchYear} ${batchType.toUpperCase()}`;
+    
+    showLoading(true);
+    
+    if (DEMO_MODE) {
+        const exams = getLocalExams();
+        const existingIndex = exams.findIndex(e => 
+            e.batch_name === batchName || (e.batch_year === batchYear && e.batch_type === batchType)
+        );
+        
+        const examData = {
+            id: existingIndex !== -1 ? exams[existingIndex].id : Date.now(),
+            batch_name: batchName,
+            batch_type: batchType,
+            batch_year: batchYear,
+            exam_date: date,
+            exam_date_timestamp: new Date(date).getTime(),
+            status: status,
+            is_active: true,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+        };
+        
+        if (existingIndex !== -1) {
+            exams[existingIndex] = examData;
+            showToast('Exam updated successfully! ✏️');
+        } else {
+            exams.push(examData);
+            showToast('Exam added successfully! ✅');
+        }
+        
+        localStorage.setItem('exam-master-exams', JSON.stringify(exams));
+        
+        setTimeout(() => {
+            showLoading(false);
+            clearExamForm();
+            loadExams();
+            refreshStats();
+        }, 1000);
+    } else {
+        try {
+            // Check if exam exists
+            const { data: existing } = await supabase
+                .from('exams')
+                .select('*')
+                .eq('batch_year', batchYear)
+                .eq('batch_type', batchType)
+                .single();
+            
+            let result;
+            
+            if (existing) {
+                // Update existing
+                result = await supabase
+                    .from('exams')
+                    .update({
+                        batch_name: batchName,
+                        batch_type: batchType,
+                        batch_year: batchYear,
+                        exam_date: new Date(date).toISOString(),
+                        exam_date_timestamp: new Date(date).getTime(),
+                        status: status,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', existing.id);
+                showToast('Exam updated successfully! ✏️');
+            } else {
+                // Insert new
+                result = await supabase
+                    .from('exams')
+                    .insert([{
+                        batch_name: batchName,
+                        batch_type: batchType,
+                        batch_year: batchYear,
+                        exam_date: new Date(date).toISOString(),
+                        exam_date_timestamp: new Date(date).getTime(),
+                        status: status,
+                        is_active: true
+                    }]);
+                showToast('Exam added successfully! ✅');
+            }
+            
+            showLoading(false);
+            clearExamForm();
+            loadExams();
+            refreshStats();
+            
+        } catch (err) {
+            showLoading(false);
+            showToast('Error saving exam');
+            console.error('Save exam error:', err);
+        }
+    }
+}
+
+async function loadExams() {
+    if (DEMO_MODE) {
+        const exams = getLocalExams();
+        displayExams(exams);
+    } else {
         try {
             const { data, error } = await supabase
                 .from('exams')
                 .select('*')
-                .eq('status', 'enabled')
-                .order('exam_date', { ascending: true })
-                .limit(1);
+                .order('exam_date', { ascending: true });
             
-            if (data && data.length > 0) {
-                examData = {
-                    name: data[0].batch_name,
-                    date: new Date(data[0].exam_date).getTime()
-                };
+            if (error) {
+                console.error('Load exams error:', error);
+                showToast('Error loading exams');
+            } else {
+                displayExams(data || []);
             }
         } catch (err) {
-            console.log('Supabase not configured, trying localStorage...');
+            console.error('Load exams exception:', err);
         }
-    }
-    
-    // Fallback to localStorage (for demo/admin testing)
-    if (!examData) {
-        const localExams = localStorage.getItem('exam-master-exams');
-        if (localExams) {
-            const exams = JSON.parse(localExams);
-            const enabledExams = exams.filter(e => e.status === 'enabled');
-            if (enabledExams.length > 0) {
-                // Get the nearest upcoming exam
-                const sortedExams = enabledExams.sort((a, b) => {
-                    return new Date(a.date || a.exam_date) - new Date(b.date || b.exam_date);
-                });
-                examData = {
-                    name: sortedExams[0].name || sortedExams[0].batch_name,
-                    date: new Date(sortedExams[0].date || sortedExams[0].exam_date).getTime()
-                };
-            }
-        }
-    }
-    
-    // Use exam data or fallback to default
-    if (examData) {
-        document.getElementById('examTitle').textContent = examData.name;
-        updateCountdown(examData.date);
-        setInterval(() => updateCountdown(examData.date), 1000);
-    } else {
-        // Default exam date
-        const defaultDate = getNextExamDate();
-        document.getElementById('examTitle').textContent = '2026 A/L Examination';
-        updateCountdown(defaultDate);
-        setInterval(() => updateCountdown(defaultDate), 1000);
     }
 }
 
-function getNextExamDate() {
-    // Default fallback date: August 1, 2026
-    return new Date('2026-08-01T09:00:00').getTime();
-}
-
-function updateCountdown(targetDate) {
-    const now = new Date().getTime();
-    const distance = targetDate - now;
+function displayExams(exams) {
+    const listDiv = document.getElementById('examList');
     
-    if (distance < 0) {
-        document.getElementById('examTitle').textContent = 'Exam Day is Here! 🎉';
-        setAllTimerValues(0, 0, 0, 0);
+    if (exams.length === 0) {
+        listDiv.innerHTML = '<p style="color: var(--text-secondary); text-align: center;">No exams yet</p>';
         return;
     }
     
-    // Calculate years, months, days, hours
-    const years = Math.floor(distance / (1000 * 60 * 60 * 24 * 365));
-    const months = Math.floor((distance % (1000 * 60 * 60 * 24 * 365)) / (1000 * 60 * 60 * 24 * 30));
-    const days = Math.floor((distance % (1000 * 60 * 60 * 24 * 30)) / (1000 * 60 * 60 * 24));
-    const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    listDiv.innerHTML = exams.map(exam => {
+        const isActive = exam.is_active !== false;
+        const statusClass = exam.status === 'live' ? 'live-badge' : 
+                           exam.status === 'completed' ? 'completed-badge' : 'upcoming-badge';
+        const statusText = exam.status === 'live' ? 'Live' : 
+                          exam.status === 'completed' ? 'Completed' : 'Upcoming';
+        
+        return `
+        <div class="exam-list-item">
+            <div class="exam-info">
+                <h4>${exam.batch_name || exam.name}</h4>
+                <div style="display: flex; gap: 8px; margin: 8px 0; flex-wrap: wrap;">
+                    <span class="status-badge ${statusClass}">${statusText}</span>
+                    <span class="type-badge ${exam.batch_type === 'al' ? 'al-badge' : 'ol-badge'}">
+                        ${exam.batch_type ? exam.batch_type.toUpperCase() : 'A/L'}
+                    </span>
+                    <span class="year-badge">${exam.batch_year || '2026'}</span>
+                </div>
+                <p><i class="fas fa-calendar"></i> ${formatDate(exam.exam_date || exam.date)}</p>
+                <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 5px;">
+                    <i class="fas fa-clock"></i> ${getTimeRemaining(exam.exam_date || exam.date)}
+                </p>
+            </div>
+            <div class="exam-actions">
+                <button class="icon-btn-small" onclick="editExam(${exam.id})" title="Edit">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <button class="icon-btn-small" onclick="deleteExam(${exam.id})" title="Delete">
+                    <i class="fas fa-trash"></i>
+                </button>
+                <button class="icon-btn-small ${isActive ? 'active-btn' : 'inactive-btn'}" 
+                        onclick="toggleExamStatus(${exam.id})" 
+                        title="${isActive ? 'Disable' : 'Enable'}">
+                    <i class="fas fa-${isActive ? 'toggle-on' : 'toggle-off'}"></i>
+                </button>
+            </div>
+        </div>
+        `;
+    }).join('');
     
-    setAllTimerValues(years, months, days, hours);
+    // Add CSS for badges
+    addBadgeStyles();
 }
 
-function setAllTimerValues(years, months, days, hours) {
-    document.getElementById('years').textContent = years;
-    document.getElementById('months').textContent = months;
-    document.getElementById('days').textContent = pad(days);
-    document.getElementById('hours').textContent = pad(hours);
-}
-
-function pad(num) {
-    return num.toString().padStart(2, '0');
-}
-
-// ==========================================
-// DAILY QUOTE
-// ==========================================
-async function loadDailyQuote() {
-    let quotes = [];
+function getTimeRemaining(dateString) {
+    const examDate = new Date(dateString);
+    const now = new Date();
+    const diffMs = examDate - now;
     
-    // Try to load from Supabase first
-    if (typeof supabase !== 'undefined') {
+    if (diffMs < 0) {
+        return 'Exam started';
+    }
+    
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    const diffHours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    
+    if (diffDays > 0) {
+        return `${diffDays} days ${diffHours} hours remaining`;
+    } else if (diffHours > 0) {
+        return `${diffHours} hours remaining`;
+    } else {
+        const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+        return `${diffMinutes} minutes remaining`;
+    }
+}
+
+function addBadgeStyles() {
+    if (!document.getElementById('badge-styles')) {
+        const style = document.createElement('style');
+        style.id = 'badge-styles';
+        style.textContent = `
+            .status-badge {
+                padding: 4px 10px;
+                border-radius: 20px;
+                font-size: 0.75rem;
+                font-weight: 600;
+                display: inline-block;
+            }
+            .live-badge { background: linear-gradient(135deg, #ff4757, #ff6b81); color: white; }
+            .upcoming-badge { background: linear-gradient(135deg, #2ecc71, #1dd1a1); color: white; }
+            .completed-badge { background: linear-gradient(135deg, #576574, #8395a7); color: white; }
+            .type-badge {
+                padding: 4px 10px;
+                border-radius: 20px;
+                font-size: 0.75rem;
+                font-weight: 600;
+                display: inline-block;
+            }
+            .al-badge { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
+            .ol-badge { background: linear-gradient(135deg, #f093fb, #f5576c); color: white; }
+            .year-badge {
+                padding: 4px 10px;
+                border-radius: 20px;
+                font-size: 0.75rem;
+                background: rgba(255, 255, 255, 0.1);
+                color: var(--text-secondary);
+            }
+            .active-btn { color: #2ecc71; }
+            .inactive-btn { color: #ff4757; }
+        `;
+        document.head.appendChild(style);
+    }
+}
+
+async function editExam(id) {
+    if (DEMO_MODE) {
+        const exams = getLocalExams();
+        const exam = exams.find(e => e.id === id);
+        if (exam) {
+            document.getElementById('batchType').value = exam.batch_type || 'al';
+            document.getElementById('batchYear').value = exam.batch_year || '';
+            document.getElementById('examName').value = exam.batch_name || exam.name || '';
+            document.getElementById('examStatus').value = exam.status || 'upcoming';
+            
+            // Format date for datetime-local input
+            const date = new Date(exam.exam_date || exam.date);
+            const localDate = new Date(date.getTime() - (date.getTimezoneOffset() * 60000));
+            document.getElementById('examDate').value = localDate.toISOString().slice(0, 16);
+            
+            showToast('Edit mode - Update and save');
+            await deleteExam(id, true);
+        }
+    } else {
         try {
-            const { data, error } = await supabase
-                .from('quotes')
+            const { data } = await supabase
+                .from('exams')
+                .select('*')
+                .eq('id', id)
+                .single();
+            
+            if (data) {
+                document.getElementById('batchType').value = data.batch_type || 'al';
+                document.getElementById('batchYear').value = data.batch_year || '';
+                document.getElementById('examName').value = data.batch_name || '';
+                document.getElementById('examStatus').value = data.status || 'upcoming';
+                
+                const date = new Date(data.exam_date);
+                const localDate = new Date(date.getTime() - (date.getTimezoneOffset() * 60000));
+                document.getElementById('examDate').value = localDate.toISOString().slice(0, 16);
+                
+                showToast('Edit mode - Update and save');
+                await deleteExam(id, true);
+            }
+        } catch (err) {
+            console.error('Edit exam error:', err);
+        }
+    }
+}
+
+async function deleteExam(id, silent = false) {
+    if (!silent && !confirm('Are you sure you want to delete this exam?')) {
+        return;
+    }
+    
+    if (DEMO_MODE) {
+        let exams = getLocalExams();
+        exams = exams.filter(e => e.id !== id);
+        localStorage.setItem('exam-master-exams', JSON.stringify(exams));
+        loadExams();
+        refreshStats();
+        if (!silent) showToast('Exam deleted');
+    } else {
+        try {
+            const { error } = await supabase
+                .from('exams')
+                .delete()
+                .eq('id', id);
+            
+            if (error) {
+                showToast('Error deleting exam');
+                console.error('Delete error:', error);
+            } else {
+                loadExams();
+                refreshStats();
+                if (!silent) showToast('Exam deleted');
+            }
+        } catch (err) {
+            console.error('Delete exception:', err);
+        }
+    }
+}
+
+async function toggleExamStatus(id) {
+    if (DEMO_MODE) {
+        const exams = getLocalExams();
+        const examIndex = exams.findIndex(e => e.id === id);
+        if (examIndex !== -1) {
+            exams[examIndex].is_active = !exams[examIndex].is_active;
+            localStorage.setItem('exam-master-exams', JSON.stringify(exams));
+            loadExams();
+            showToast(`Exam ${exams[examIndex].is_active ? 'enabled' : 'disabled'}`);
+        }
+    } else {
+        try {
+            const { data } = await supabase
+                .from('exams')
+                .select('is_active')
+                .eq('id', id)
+                .single();
+            
+            const newStatus = !data.is_active;
+            
+            const { error } = await supabase
+                .from('exams')
+                .update({ is_active: newStatus })
+                .eq('id', id);
+            
+            if (error) {
+                showToast('Error updating status');
+            } else {
+                loadExams();
+                showToast(`Exam ${newStatus ? 'enabled' : 'disabled'}`);
+            }
+        } catch (err) {
+            console.error('Toggle status error:', err);
+        }
+    }
+}
+
+function clearExamForm() {
+    document.getElementById('batchYear').value = '';
+    document.getElementById('examDate').value = '';
+    document.getElementById('examName').value = '';
+    document.getElementById('examStatus').value = 'upcoming';
+}
+
+// ==========================================
+// ENHANCED NOTIFICATIONS WITH EDIT/TOGGLE
+// ==========================================
+async function sendNotification() {
+    const title = document.getElementById('notifTitle').value.trim();
+    const message = document.getElementById('notifMessage').value.trim();
+    const imageFile = document.getElementById('imageFile').files[0];
+    const pdfFile = document.getElementById('pdfFile').files[0];
+    
+    if (!title || !message) {
+        showToast('Please fill in notification title and message');
+        return;
+    }
+    
+    showLoading(true);
+    
+    let imageUrl = null;
+    let pdfUrl = null;
+    
+    if (DEMO_MODE) {
+        if (imageFile) imageUrl = await fileToBase64(imageFile);
+        if (pdfFile) pdfUrl = await fileToBase64(pdfFile);
+        
+        const notification = {
+            id: Date.now(),
+            title: title,
+            message: message,
+            image_url: imageUrl,
+            pdf_url: pdfUrl,
+            is_active: true,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+        };
+        
+        const notifications = getLocalNotifications();
+        notifications.push(notification);
+        localStorage.setItem('exam-master-notifications', JSON.stringify(notifications));
+        
+        setTimeout(() => {
+            showLoading(false);
+            clearNotificationForm();
+            loadNotificationsForAdmin();
+            refreshStats();
+            showToast('Notification sent! 📢');
+        }, 1500);
+    } else {
+        try {
+            if (imageFile) {
+                const imgFileName = `images/${Date.now()}_${imageFile.name}`;
+                const { data: imgData, error: imgError } = await supabase.storage
+                    .from('downloads')
+                    .upload(imgFileName, imageFile);
+                
+                if (!imgError) {
+                    const { data: publicData } = supabase.storage
+                        .from('downloads')
+                        .getPublicUrl(imgFileName);
+                    imageUrl = publicData.publicUrl;
+                }
+            }
+            
+            if (pdfFile) {
+                const pdfFileName = `pdfs/${Date.now()}_${pdfFile.name}`;
+                const { data: pdfData, error: pdfError } = await supabase.storage
+                    .from('downloads')
+                    .upload(pdfFileName, pdfFile);
+                
+                if (!pdfError) {
+                    const { data: publicData } = supabase.storage
+                        .from('downloads')
+                        .getPublicUrl(pdfFileName);
+                    pdfUrl = publicData.publicUrl;
+                }
+            }
+            
+            const { error } = await supabase
+                .from('notifications')
+                .insert([{
+                    title: title,
+                    message: message,
+                    image_url: imageUrl,
+                    pdf_url: pdfUrl,
+                    is_active: true
+                }]);
+            
+            showLoading(false);
+            
+            if (error) {
+                showToast('Error sending notification: ' + error.message);
+            } else {
+                clearNotificationForm();
+                loadNotificationsForAdmin();
+                refreshStats();
+                showToast('Notification sent! 📢');
+            }
+        } catch (err) {
+            showLoading(false);
+            console.error('Notification error:', err);
+            showToast('Error sending notification');
+        }
+    }
+}
+
+async function loadNotificationsForAdmin() {
+    if (DEMO_MODE) {
+        const notifications = getLocalNotifications();
+        displayNotificationsForAdmin(notifications);
+    } else {
+        try {
+            const { data } = await supabase
+                .from('notifications')
                 .select('*')
                 .order('created_at', { ascending: false });
             
-            if (data && data.length > 0) {
-                quotes = data.map(q => q.text);
-            }
+            displayNotificationsForAdmin(data || []);
         } catch (err) {
-            console.log('Supabase not configured, trying localStorage...');
+            console.error('Load notifications error:', err);
         }
     }
-    
-    // Fallback to localStorage (for demo/admin testing)
-    if (quotes.length === 0) {
-        const localQuotes = localStorage.getItem('exam-master-quotes');
-        if (localQuotes) {
-            const quotesData = JSON.parse(localQuotes);
-            quotes = quotesData.map(q => q.text);
-        }
-    }
-    
-    // Final fallback to default quotes
-    if (quotes.length === 0) {
-        quotes = [
-            "Success is the sum of small efforts repeated day in and day out.",
-            "The expert in anything was once a beginner.",
-            "Don't watch the clock; do what it does. Keep going.",
-            "Your limitation—it's only your imagination.",
-            "Push yourself, because no one else is going to do it for you.",
-            "Great things never come from comfort zones.",
-            "Dream it. Wish it. Do it.",
-            "Success doesn't just find you. You have to go out and get it.",
-            "The harder you work for something, the greater you'll feel when you achieve it.",
-            "Dream bigger. Do bigger.",
-            "Don't stop when you're tired. Stop when you're done.",
-            "Wake up with determination. Go to bed with satisfaction.",
-            "Do something today that your future self will thank you for.",
-            "Little things make big days.",
-            "It's going to be hard, but hard does not mean impossible.",
-            "Don't wait for opportunity. Create it.",
-            "Sometimes we're tested not to show our weaknesses, but to discover our strengths.",
-            "The key to success is to focus on goals, not obstacles.",
-            "Dream it. Believe it. Build it."
-        ];
-    }
-    
-    // Select quote based on day of year
-    const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
-    const quote = quotes[dayOfYear % quotes.length];
-    
-    document.getElementById('dailyQuote').textContent = quote;
 }
 
-// ==========================================
-// NOTIFICATIONS / ALERTS
-// ==========================================
-async function loadNotifications() {
-    // Check if already seen this session
-    const hasSeenAlert = sessionStorage.getItem('exam-master-alert-seen');
+function displayNotificationsForAdmin(notifications) {
+    const notificationCard = document.querySelector('.admin-card:nth-child(2)');
+    if (!notificationCard) return;
     
-    if (hasSeenAlert) {
-        return; // Don't show again
+    // Create notifications list if not exists
+    let notifList = notificationCard.querySelector('#adminNotificationList');
+    if (!notifList) {
+        notifList = document.createElement('div');
+        notifList.id = 'adminNotificationList';
+        notifList.style.marginTop = '1.5rem';
+        notificationCard.appendChild(notifList);
     }
     
-    let notification = null;
+    if (notifications.length === 0) {
+        notifList.innerHTML = '<p style="color: var(--text-secondary); text-align: center;">No notifications yet</p>';
+        return;
+    }
     
-    // Try to load from Supabase first
-    if (typeof supabase !== 'undefined') {
+    notifList.innerHTML = notifications.map(notif => `
+        <div class="notification-list-item">
+            <div class="notif-info">
+                <h4>${notif.title}</h4>
+                <p>${notif.message.substring(0, 80)}${notif.message.length > 80 ? '...' : ''}</p>
+                <div style="display: flex; gap: 8px; margin-top: 5px; flex-wrap: wrap;">
+                    <span class="notif-status ${notif.is_active ? 'active' : 'inactive'}">
+                        ${notif.is_active ? 'Active' : 'Inactive'}
+                    </span>
+                    <span style="font-size: 0.8rem; color: var(--text-secondary);">
+                        <i class="fas fa-calendar"></i> ${formatDate(notif.created_at)}
+                    </span>
+                </div>
+            </div>
+            <div class="notif-actions">
+                <button class="icon-btn-small" onclick="editNotification(${notif.id})" title="Edit">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <button class="icon-btn-small ${notif.is_active ? 'active-btn' : 'inactive-btn'}" 
+                        onclick="toggleNotificationStatus(${notif.id}, ${!notif.is_active})" 
+                        title="${notif.is_active ? 'Deactivate' : 'Activate'}">
+                    <i class="fas fa-${notif.is_active ? 'toggle-on' : 'toggle-off'}"></i>
+                </button>
+                <button class="icon-btn-small" onclick="deleteNotification(${notif.id})" title="Delete">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </div>
+    `).join('');
+    
+    // Add notification styles
+    addNotificationStyles();
+}
+
+function addNotificationStyles() {
+    if (!document.getElementById('notification-styles')) {
+        const style = document.createElement('style');
+        style.id = 'notification-styles';
+        style.textContent = `
+            .notification-list-item {
+                background: rgba(0, 0, 0, 0.2);
+                padding: 1rem;
+                border-radius: 12px;
+                margin-bottom: 0.75rem;
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-start;
+                border: 1px solid var(--border);
+            }
+            .notif-info {
+                flex: 1;
+                margin-right: 1rem;
+            }
+            .notif-info h4 {
+                margin-bottom: 0.5rem;
+                color: var(--text-primary);
+            }
+            .notif-info p {
+                font-size: 0.9rem;
+                color: var(--text-secondary);
+                margin-bottom: 0.5rem;
+            }
+            .notif-status {
+                padding: 3px 8px;
+                border-radius: 12px;
+                font-size: 0.75rem;
+                font-weight: 600;
+            }
+            .notif-status.active {
+                background: linear-gradient(135deg, #2ecc71, #1dd1a1);
+                color: white;
+            }
+            .notif-status.inactive {
+                background: linear-gradient(135deg, #576574, #8395a7);
+                color: white;
+            }
+            .notif-actions {
+                display: flex;
+                gap: 0.5rem;
+            }
+        `;
+        document.head.appendChild(style);
+    }
+}
+
+async function editNotification(id) {
+    if (DEMO_MODE) {
+        const notifications = getLocalNotifications();
+        const notif = notifications.find(n => n.id === id);
+        if (notif) {
+            document.getElementById('notifTitle').value = notif.title;
+            document.getElementById('notifMessage').value = notif.message;
+            showToast('Edit mode - Update and send to save changes');
+            await deleteNotification(id, true);
+        }
+    } else {
         try {
-            const { data, error } = await supabase
+            const { data } = await supabase
                 .from('notifications')
                 .select('*')
-                .eq('is_active', true)
-                .order('created_at', { ascending: false })
-                .limit(1);
+                .eq('id', id)
+                .single();
             
-            if (data && data.length > 0) {
-                notification = data[0];
+            if (data) {
+                document.getElementById('notifTitle').value = data.title;
+                document.getElementById('notifMessage').value = data.message;
+                showToast('Edit mode - Update and send to save changes');
+                await deleteNotification(id, true);
             }
         } catch (err) {
-            console.log('Supabase not configured, trying localStorage...');
+            console.error('Edit notification error:', err);
         }
     }
-    
-    // Fallback to localStorage (for demo/admin testing)
-    if (!notification) {
-        const localNotifs = localStorage.getItem('exam-master-notifications');
-        if (localNotifs) {
-            const notifs = JSON.parse(localNotifs);
-            const activeNotifs = notifs.filter(n => n.isActive || n.is_active);
-            if (activeNotifs.length > 0) {
-                notification = activeNotifs[activeNotifs.length - 1]; // Get latest
-            }
+}
+
+async function toggleNotificationStatus(id, newStatus) {
+    if (DEMO_MODE) {
+        const notifications = getLocalNotifications();
+        const index = notifications.findIndex(n => n.id === id);
+        if (index !== -1) {
+            notifications[index].is_active = newStatus;
+            localStorage.setItem('exam-master-notifications', JSON.stringify(notifications));
+            loadNotificationsForAdmin();
+            showToast(`Notification ${newStatus ? 'activated' : 'deactivated'}`);
         }
-    }
-    
-    // Show notification or default welcome message
-    if (notification) {
-        showAlert(
-            notification.title,
-            notification.message,
-            notification.imageUrl || notification.image_url,
-            notification.pdfUrl || notification.pdf_url
-        );
     } else {
-        // Default welcome message
-        showAlert(
-            'Welcome to Exam Master! 🎓',
-            'Your complete study companion for exam preparation. Explore AI assistance, study timer, and more!',
-            null,
-            null
-        );
-    }
-}
-
-function showAlert(title, message, imageUrl, pdfUrl) {
-    const alertSection = document.getElementById('alertSection');
-    const alertTitle = document.getElementById('alertTitle');
-    const alertMessage = document.getElementById('alertMessage');
-    const alertImage = document.getElementById('alertImage');
-    const alertImg = document.getElementById('alertImg');
-    const alertButtons = document.getElementById('alertButtons');
-    const alertPdfBtn = document.getElementById('alertPdfBtn');
-    
-    alertTitle.textContent = title;
-    alertMessage.textContent = message;
-    
-    if (imageUrl) {
-        alertImg.src = imageUrl;
-        alertImage.style.display = 'block';
-    } else {
-        alertImage.style.display = 'none';
-    }
-    
-    if (pdfUrl) {
-        alertPdfBtn.href = pdfUrl;
-        alertButtons.style.display = 'block';
-    } else {
-        alertButtons.style.display = 'none';
-    }
-    
-    alertSection.style.display = 'block';
-}
-
-function closeAlert() {
-    document.getElementById('alertSection').style.display = 'none';
-    sessionStorage.setItem('exam-master-alert-seen', 'true');
-}
-
-// ==========================================
-// AI STUDY ASSISTANT (Claude API)
-// ==========================================
-async function sendAIMessage() {
-    const input = document.getElementById('aiInput');
-    const message = input.value.trim();
-    
-    if (!message) return;
-    
-    // Add user message to UI
-    addAIMessage(message, 'user');
-    input.value = '';
-    
-    // Add to conversation history
-    aiConversation.push({ role: 'user', content: message });
-    
-    // Show typing indicator
-    const typingId = addTypingIndicator();
-    
-    try {
-        // Call Claude API
-        const response = await fetch('https://api.anthropic.com/v1/messages', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'anthropic-version': '2023-06-01'
-            },
-            body: JSON.stringify({
-                model: 'claude-sonnet-4-20250514',
-                max_tokens: 1000,
-                messages: aiConversation,
-                system: 'You are a helpful study assistant for Sri Lankan students preparing for exams. Provide encouraging, accurate, and practical study advice. Keep responses concise and motivating.'
-            })
-        });
-        
-        const data = await response.json();
-        
-        // Remove typing indicator
-        removeTypingIndicator(typingId);
-        
-        if (data.content && data.content[0]) {
-            const botMessage = data.content[0].text;
-            aiConversation.push({ role: 'assistant', content: botMessage });
-            addAIMessage(botMessage, 'bot');
+        try {
+            const { error } = await supabase
+                .from('notifications')
+                .update({ is_active: newStatus })
+                .eq('id', id);
             
-            // Save conversation to localStorage
-            saveAIHistory();
-        } else {
-            addAIMessage('Sorry, I encountered an error. Please try again!', 'bot');
+            if (error) {
+                showToast('Error updating notification status');
+            } else {
+                loadNotificationsForAdmin();
+                showToast(`Notification ${newStatus ? 'activated' : 'deactivated'}`);
+            }
+        } catch (err) {
+            console.error('Toggle notification error:', err);
         }
-    } catch (error) {
-        removeTypingIndicator(typingId);
-        console.error('AI Error:', error);
-        
-        // Fallback responses for offline mode
-        const fallbackResponse = getFallbackResponse(message);
-        addAIMessage(fallbackResponse, 'bot');
     }
 }
 
-function addAIMessage(text, sender) {
-    const chatBox = document.getElementById('aiChatBox');
-    const messageDiv = document.createElement('div');
-    messageDiv.className = `ai-message ai-message-${sender}`;
+async function deleteNotification(id, silent = false) {
+    if (!silent && !confirm('Are you sure you want to delete this notification?')) {
+        return;
+    }
     
-    const avatarDiv = document.createElement('div');
-    avatarDiv.className = 'message-avatar';
-    avatarDiv.innerHTML = sender === 'bot' ? '<i class="fas fa-robot"></i>' : '<i class="fas fa-user"></i>';
-    
-    const contentDiv = document.createElement('div');
-    contentDiv.className = 'message-content';
-    contentDiv.textContent = text;
-    
-    messageDiv.appendChild(avatarDiv);
-    messageDiv.appendChild(contentDiv);
-    chatBox.appendChild(messageDiv);
-    
-    chatBox.scrollTop = chatBox.scrollHeight;
-}
-
-function addTypingIndicator() {
-    const chatBox = document.getElementById('aiChatBox');
-    const typingDiv = document.createElement('div');
-    const id = 'typing-' + Date.now();
-    typingDiv.id = id;
-    typingDiv.className = 'ai-message ai-message-bot';
-    typingDiv.innerHTML = `
-        <div class="message-avatar"><i class="fas fa-robot"></i></div>
-        <div class="message-content">Thinking...</div>
-    `;
-    chatBox.appendChild(typingDiv);
-    chatBox.scrollTop = chatBox.scrollHeight;
-    return id;
-}
-
-function removeTypingIndicator(id) {
-    const element = document.getElementById(id);
-    if (element) element.remove();
-}
-
-function getFallbackResponse(message) {
-    const lowerMsg = message.toLowerCase();
-    
-    if (lowerMsg.includes('time') || lowerMsg.includes('manage')) {
-        return 'Use the Pomodoro Technique: Study for 25 minutes, then take a 5-minute break. This helps maintain focus and prevents burnout. Try our study timer!';
-    } else if (lowerMsg.includes('stress') || lowerMsg.includes('anxiety')) {
-        return 'Deep breathing and regular breaks are key! Remember: preparation reduces anxiety. Break your study into manageable chunks and celebrate small wins.';
-    } else if (lowerMsg.includes('tip') || lowerMsg.includes('study')) {
-        return 'Active recall is powerful! Instead of re-reading, test yourself regularly. Use flashcards, practice questions, and teach concepts to others.';
+    if (DEMO_MODE) {
+        let notifications = getLocalNotifications();
+        notifications = notifications.filter(n => n.id !== id);
+        localStorage.setItem('exam-master-notifications', JSON.stringify(notifications));
+        loadNotificationsForAdmin();
+        if (!silent) showToast('Notification deleted');
     } else {
-        return 'I\'m here to help with your studies! Ask me about time management, study techniques, stress reduction, or any subject-specific questions.';
-    }
-}
-
-function askAI(question) {
-    document.getElementById('aiInput').value = question;
-    sendAIMessage();
-}
-
-function saveAIHistory() {
-    localStorage.setItem('exam-master-ai-history', JSON.stringify(aiConversation));
-}
-
-function loadAIHistory() {
-    const saved = localStorage.getItem('exam-master-ai-history');
-    if (saved) {
-        aiConversation = JSON.parse(saved);
-        
-        // Restore conversation to UI (skip first welcome message)
-        const chatBox = document.getElementById('aiChatBox');
-        chatBox.innerHTML = `
-            <div class="ai-message ai-message-bot">
-                <div class="message-avatar"><i class="fas fa-robot"></i></div>
-                <div class="message-content">Hello! I'm your AI study assistant. Ask me anything about your subjects, study tips, or exam strategies! 📚</div>
-            </div>
-        `;
-        
-        aiConversation.forEach(msg => {
-            const sender = msg.role === 'user' ? 'user' : 'bot';
-            addAIMessage(msg.content, sender);
-        });
-    }
-}
-
-// ==========================================
-// STUDY TIMER (Pomodoro)
-// ==========================================
-function startTimer() {
-    if (timerRunning) return;
-    
-    timerRunning = true;
-    document.getElementById('startBtn').style.display = 'none';
-    document.getElementById('pauseBtn').style.display = 'block';
-    
-    timerInterval = setInterval(() => {
-        if (timerSeconds > 0) {
-            timerSeconds--;
-            updateTimerDisplay();
-        } else {
-            timerComplete();
+        try {
+            const { error } = await supabase
+                .from('notifications')
+                .delete()
+                .eq('id', id);
+            
+            if (error) {
+                showToast('Error deleting notification');
+            } else {
+                loadNotificationsForAdmin();
+                if (!silent) showToast('Notification deleted');
+            }
+        } catch (err) {
+            console.error('Delete notification error:', err);
         }
-    }, 1000);
-}
-
-function pauseTimer() {
-    timerRunning = false;
-    clearInterval(timerInterval);
-    document.getElementById('startBtn').style.display = 'block';
-    document.getElementById('pauseBtn').style.display = 'none';
-}
-
-function resetTimer() {
-    pauseTimer();
-    timerSeconds = 25 * 60;
-    updateTimerDisplay();
-}
-
-function updateTimerDisplay() {
-    const minutes = Math.floor(timerSeconds / 60);
-    const seconds = timerSeconds % 60;
-    document.getElementById('timerDisplay').textContent = `${pad(minutes)}:${pad(seconds)}`;
-    
-    // Add gradient if not exists
-    addTimerGradient();
-    
-    // Update progress circle
-    const totalSeconds = 25 * 60;
-    const progress = (timerSeconds / totalSeconds) * 565.48;
-    document.getElementById('timerProgress').style.strokeDashoffset = 565.48 - progress;
-}
-
-function addTimerGradient() {
-    const svg = document.querySelector('.timer-svg');
-    if (!document.getElementById('timerGradient')) {
-        const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
-        const gradient = document.createElementNS('http://www.w3.org/2000/svg', 'linearGradient');
-        gradient.setAttribute('id', 'timerGradient');
-        gradient.setAttribute('x1', '0%');
-        gradient.setAttribute('y1', '0%');
-        gradient.setAttribute('x2', '100%');
-        gradient.setAttribute('y2', '100%');
-        
-        const stop1 = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
-        stop1.setAttribute('offset', '0%');
-        stop1.setAttribute('style', 'stop-color:#667eea;stop-opacity:1');
-        
-        const stop2 = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
-        stop2.setAttribute('offset', '100%');
-        stop2.setAttribute('style', 'stop-color:#764ba2;stop-opacity:1');
-        
-        gradient.appendChild(stop1);
-        gradient.appendChild(stop2);
-        defs.appendChild(gradient);
-        svg.insertBefore(defs, svg.firstChild);
     }
 }
 
-function timerComplete() {
-    pauseTimer();
+function clearNotificationForm() {
+    document.getElementById('notifTitle').value = '';
+    document.getElementById('notifMessage').value = '';
+    document.getElementById('imageFile').value = '';
+    document.getElementById('pdfFile').value = '';
+    document.getElementById('imagePreview').innerHTML = '';
+    document.getElementById('pdfPreview').innerHTML = '';
+}
+
+// ==========================================
+// QUOTES
+// ==========================================
+async function addQuote() {
+    const text = document.getElementById('quoteText').value.trim();
     
-    // Update stats
-    const studyTime = 25; // minutes
-    updateTimerStats(studyTime);
+    if (!text) {
+        showToast('Please enter a quote');
+        return;
+    }
     
-    // Show notification
-    showToast('🎉 Great work! Take a 5-minute break!');
+    showLoading(true);
     
-    // Play notification sound (if available)
-    if ('Notification' in window && Notification.permission === 'granted') {
-        new Notification('Study Session Complete!', {
-            body: 'Time for a 5-minute break! 🎉',
-            icon: '/icon-192.png'
+    if (DEMO_MODE) {
+        const quotes = getLocalQuotes();
+        quotes.push({
+            id: Date.now(),
+            text: text,
+            created_at: new Date().toISOString()
         });
-    }
-    
-    // Reset for next session
-    setTimeout(() => {
-        timerSeconds = 25 * 60;
-        updateTimerDisplay();
-    }, 1000);
-}
-
-function loadTimerStats() {
-    const todayKey = new Date().toDateString();
-    const todayTime = parseInt(localStorage.getItem(`exam-master-timer-${todayKey}`) || 0);
-    const totalTime = parseInt(localStorage.getItem('exam-master-total-time') || 0);
-    
-    document.getElementById('todayTime').textContent = formatTime(todayTime);
-    document.getElementById('totalTime').textContent = formatTime(totalTime);
-}
-
-function updateTimerStats(minutes) {
-    const todayKey = new Date().toDateString();
-    const todayTime = parseInt(localStorage.getItem(`exam-master-timer-${todayKey}`) || 0);
-    const totalTime = parseInt(localStorage.getItem('exam-master-total-time') || 0);
-    
-    const newTodayTime = todayTime + minutes;
-    const newTotalTime = totalTime + minutes;
-    
-    localStorage.setItem(`exam-master-timer-${todayKey}`, newTodayTime);
-    localStorage.setItem('exam-master-total-time', newTotalTime);
-    
-    document.getElementById('todayTime').textContent = formatTime(newTodayTime);
-    document.getElementById('totalTime').textContent = formatTime(newTotalTime);
-    
-    // Update streak
-    updateStreak();
-}
-
-function updateStreak() {
-    const lastStudyDate = localStorage.getItem('exam-master-last-study');
-    const today = new Date().toDateString();
-    let streak = parseInt(localStorage.getItem('exam-master-streak') || 0);
-    
-    if (lastStudyDate !== today) {
-        const yesterday = new Date(Date.now() - 86400000).toDateString();
+        localStorage.setItem('exam-master-quotes', JSON.stringify(quotes));
         
-        if (lastStudyDate === yesterday) {
-            streak++;
-        } else if (lastStudyDate !== today) {
-            streak = 1;
-        }
-        
-        localStorage.setItem('exam-master-streak', streak);
-        localStorage.setItem('exam-master-last-study', today);
-        updateProfileStats();
-    }
-}
-
-function formatTime(minutes) {
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    return `${hours}h ${mins}m`;
-}
-
-// ==========================================
-// OFFLINE MODE & SERVICE WORKER
-// ==========================================
-function setupOfflineMode() {
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/sw.js')
-            .then(reg => console.log('Service Worker registered'))
-            .catch(err => console.log('Service Worker registration failed:', err));
-    }
-}
-
-function checkConnection() {
-    updateConnectionStatus();
-    
-    window.addEventListener('online', updateConnectionStatus);
-    window.addEventListener('offline', updateConnectionStatus);
-}
-
-function updateConnectionStatus() {
-    const status = document.getElementById('connectionStatus');
-    const dot = status.querySelector('.status-dot');
-    const text = status.querySelector('span');
-    
-    if (navigator.onLine) {
-        dot.classList.remove('offline');
-        dot.classList.add('online');
-        text.textContent = 'Connected';
+        setTimeout(() => {
+            showLoading(false);
+            document.getElementById('quoteText').value = '';
+            refreshStats();
+            showToast('Quote added! ✨');
+        }, 1000);
     } else {
-        dot.classList.remove('online');
-        dot.classList.add('offline');
-        text.textContent = 'Offline Mode';
-        showToast('Working offline - data will sync when connected');
+        try {
+            const { error } = await supabase
+                .from('quotes')
+                .insert([{ text: text }]);
+            
+            showLoading(false);
+            
+            if (error) {
+                showToast('Error adding quote: ' + error.message);
+            } else {
+                document.getElementById('quoteText').value = '';
+                refreshStats();
+                showToast('Quote added! ✨');
+            }
+        } catch (err) {
+            showLoading(false);
+            console.error('Add quote error:', err);
+        }
     }
 }
 
 // ==========================================
+// STATISTICS
 // ==========================================
-// SOCIAL SHARING
-// ==========================================
-function shareOn(platform) {
-    const url = encodeURIComponent(window.location.href);
-    const text = encodeURIComponent('Check out Exam Master - the ultimate study companion for Sri Lankan students! 📚');
-    
-    let shareUrl;
-    
-    switch(platform) {
-        case 'whatsapp':
-            shareUrl = `https://wa.me/?text=${text}%20${url}`;
-            break;
-        case 'facebook':
-            shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${url}`;
-            break;
-        case 'twitter':
-            shareUrl = `https://twitter.com/intent/tweet?text=${text}&url=${url}`;
-            break;
-        default:
-            return;
+async function refreshStats() {
+    if (DEMO_MODE) {
+        const exams = getLocalExams();
+        const notifications = getLocalNotifications();
+        const quotes = getLocalQuotes();
+        
+        document.getElementById('totalExams').textContent = exams.length;
+        document.getElementById('totalNotifs').textContent = notifications.filter(n => n.is_active).length;
+        document.getElementById('totalQuotes').textContent = quotes.length;
+    } else {
+        try {
+            const { count: examCount } = await supabase
+                .from('exams')
+                .select('*', { count: 'exact', head: true });
+            
+            const { count: notifCount } = await supabase
+                .from('notifications')
+                .select('*', { count: 'exact', head: true })
+                .eq('is_active', true);
+            
+            const { count: quoteCount } = await supabase
+                .from('quotes')
+                .select('*', { count: 'exact', head: true });
+            
+            document.getElementById('totalExams').textContent = examCount || 0;
+            document.getElementById('totalNotifs').textContent = notifCount || 0;
+            document.getElementById('totalQuotes').textContent = quoteCount || 0;
+        } catch (err) {
+            console.error('Stats error:', err);
+        }
     }
-    
-    window.open(shareUrl, '_blank', 'width=600,height=400');
 }
 
-function copyLink() {
-    const url = window.location.href;
+// ==========================================
+// LOCAL STORAGE HELPERS (Demo Mode)
+// ==========================================
+function getLocalExams() {
+    const exams = localStorage.getItem('exam-master-exams');
+    return exams ? JSON.parse(exams) : [];
+}
+
+function getLocalNotifications() {
+    const notifs = localStorage.getItem('exam-master-notifications');
+    return notifs ? JSON.parse(notifs) : [];
+}
+
+function getLocalQuotes() {
+    const quotes = localStorage.getItem('exam-master-quotes');
+    return quotes ? JSON.parse(quotes) : [];
+}
+
+// ==========================================
+// FILE UPLOADS
+// ==========================================
+function setupFileUploads() {
+    const imageInput = document.getElementById('imageFile');
+    const pdfInput = document.getElementById('pdfFile');
     
-    navigator.clipboard.writeText(url).then(() => {
-        showToast('Link copied to clipboard! 📋');
-    }).catch(err => {
-        console.error('Failed to copy:', err);
-        showToast('Failed to copy link');
+    imageInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                document.getElementById('imagePreview').innerHTML = `
+                    <div style="margin-top: 10px;">
+                        <img src="${e.target.result}" style="max-width: 100%; height: auto; border-radius: 8px; max-height: 150px;">
+                        <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 5px;">${file.name}</p>
+                    </div>
+                `;
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+    
+    pdfInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            document.getElementById('pdfPreview').innerHTML = `
+                <div style="margin-top: 10px; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 8px;">
+                    <i class="fas fa-file-pdf" style="color: #ff6b6b; margin-right: 8px;"></i>
+                    <span style="font-size: 0.85rem;">${file.name}</span>
+                    <span style="font-size: 0.75rem; color: var(--text-secondary); display: block; margin-top: 5px;">
+                        Size: ${(file.size / 1024).toFixed(2)} KB
+                    </span>
+                </div>
+            `;
+        }
     });
 }
 
-// ==========================================
-// PWA INSTALLATION
-// ==========================================
-function setupPWA() {
-    window.addEventListener('beforeinstallprompt', (e) => {
-        e.preventDefault();
-        deferredPrompt = e;
-        document.getElementById('installBtn').style.display = 'block';
-    });
-}
-
-function installPWA() {
-    if (!deferredPrompt) return;
-    
-    deferredPrompt.prompt();
-    
-    deferredPrompt.userChoice.then((choiceResult) => {
-        if (choiceResult.outcome === 'accepted') {
-            showToast('App installed successfully! 🎉');
-        }
-        deferredPrompt = null;
-        document.getElementById('installBtn').style.display = 'none';
+async function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = error => reject(error);
     });
 }
 
 // ==========================================
 // UTILITY FUNCTIONS
 // ==========================================
+function showLoading(show) {
+    const overlay = document.getElementById('loadingOverlay');
+    if (show) {
+        overlay.classList.add('active');
+    } else {
+        overlay.classList.remove('active');
+    }
+}
+
 function showToast(message) {
     const toast = document.getElementById('toast');
     toast.textContent = message;
@@ -794,63 +976,45 @@ function showToast(message) {
     }, 3000);
 }
 
-function showPrivacy() {
-    alert('Privacy Policy\n\nWe respect your privacy. All your data is stored locally on your device. We do not collect or share any personal information.');
-}
-
-function showAbout() {
-    alert('About Exam Master\n\nVersion 2.0\nDeveloped for Sri Lankan students\n\nFeatures:\n- AI Study Assistant\n- Pomodoro Timer\n- Offline Mode\n- Dashboard Customization\n\nMade with ❤️ for your success!');
-}
-
-// ==========================================
-// EVENT LISTENERS
-// ==========================================
-function setupEventListeners() {
-    // AI Input - Enter key
-    document.getElementById('aiInput').addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-            sendAIMessage();
-        }
-    });
-    
-    // Close panels when clicking outside
-    document.addEventListener('click', (e) => {
-        const themePanel = document.getElementById('themePanel');
-        const profilePanel = document.getElementById('profilePanel');
-        
-        if (!e.target.closest('.theme-panel') && !e.target.closest('[onclick*="toggleThemePanel"]')) {
-            themePanel.classList.remove('active');
-        }
-        
-        if (!e.target.closest('.profile-panel') && !e.target.closest('[onclick*="toggleProfile"]')) {
-            profilePanel.classList.remove('active');
-        }
-    });
-    
-    // Request notification permission
-    if ('Notification' in window && Notification.permission === 'default') {
-        Notification.requestPermission();
+function formatDate(dateString) {
+    try {
+        const date = new Date(dateString);
+        return date.toLocaleString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    } catch (e) {
+        return 'Invalid date';
     }
 }
 
-// ==========================================
-// EXPORT FOR GLOBAL ACCESS
-// ==========================================
-window.setTheme = setTheme;
-window.toggleThemePanel = toggleThemePanel;
-window.toggleProfile = toggleProfile;
-window.saveProfile = saveProfile;
-window.changeAvatar = changeAvatar;
-window.closeAlert = closeAlert;
-window.sendAIMessage = sendAIMessage;
-window.askAI = askAI;
-window.startTimer = startTimer;
-window.pauseTimer = pauseTimer;
-window.resetTimer = resetTimer;
-window.shareOn = shareOn;
-window.copyLink = copyLink;
-window.installPWA = installPWA;
-window.showPrivacy = showPrivacy;
-window.showAbout = showAbout;
+function pad(num) {
+    return num.toString().padStart(2, '0');
+}
 
-console.log('🎓 Exam Master initialized successfully!');
+// ==========================================
+// EXPORT FUNCTIONS
+// ==========================================
+window.adminLogin = adminLogin;
+window.logout = logout;
+window.saveExam = saveExam;
+window.editExam = editExam;
+window.deleteExam = deleteExam;
+window.toggleExamStatus = toggleExamStatus;
+window.sendNotification = sendNotification;
+window.editNotification = editNotification;
+window.toggleNotificationStatus = toggleNotificationStatus;
+window.deleteNotification = deleteNotification;
+window.addQuote = addQuote;
+window.refreshStats = refreshStats;
+
+console.log('🔐 Admin Panel loaded with enhanced features');
+console.log('Demo Mode:', DEMO_MODE);
+if (DEMO_MODE) {
+    console.log('Demo Credentials: admin@exammaster.lk / admin123');
+} else {
+    console.log('Production Mode: Using Supabase Authentication');
+}
