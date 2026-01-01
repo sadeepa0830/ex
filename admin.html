@@ -8,7 +8,6 @@
     <link rel="stylesheet" href="admin.css">
 </head>
 <body>
-    <!-- Login Section -->
     <div id="loginSection">
         <div class="login-card">
             <h2><i class="fas fa-shield-alt"></i> Admin Login</h2>
@@ -20,50 +19,32 @@
                 <label>Password</label>
                 <input type="password" id="adminPassword" placeholder="Enter password">
             </div>
-            <button class="btn-primary" onclick="adminLogin()">
-                <i class="fas fa-sign-in-alt"></i> Login
-            </button>
+            <button class="btn-primary" onclick="adminLogin()"><i class="fas fa-sign-in-alt"></i> Login</button>
         </div>
     </div>
 
-    <!-- Dashboard Section -->
     <div id="dashboardSection">
         <div class="container">
-            <!-- Header -->
             <div class="dashboard-header">
                 <h1><i class="fas fa-tachometer-alt"></i> Admin Dashboard</h1>
-                <button class="btn-logout" onclick="logout()">
-                    <i class="fas fa-sign-out-alt"></i> Logout
-                </button>
+                <button class="btn-logout" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
             </div>
 
-            <!-- Statistics -->
             <div class="admin-card stats-card">
                 <h3><i class="fas fa-chart-bar"></i> Statistics Overview</h3>
                 <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-value" id="totalExams">0</div>
-                        <div class="stat-label">Total Exams</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value" id="totalNotifs">0</div>
-                        <div class="stat-label">Notifications</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value" id="totalQuotes">0</div>
-                        <div class="stat-label">Motivational Quotes</div>
-                    </div>
+                    <div class="stat-card"><div class="stat-value" id="totalExams">0</div><div class="stat-label">Total Exams</div></div>
+                    <div class="stat-card"><div class="stat-value" id="totalNotifs">0</div><div class="stat-label">Notifications</div></div>
+                    <div class="stat-card"><div class="stat-value" id="totalQuotes">0</div><div class="stat-label">Quotes</div></div>
                 </div>
             </div>
 
-            <!-- Main Grid -->
             <div class="admin-grid">
-                <!-- Exam Management -->
                 <div class="admin-card">
                     <h3><i class="fas fa-calendar-alt"></i> Manage Exams</h3>
                     <div class="form-row">
-                        <input type="text" id="examName" placeholder="Exam Name (e.g., 2026 A/L)">
-                        <input type="text" id="examYear" placeholder="Year (e.g., 2026)">
+                        <input type="text" id="examName" placeholder="Exam Name">
+                        <input type="text" id="examYear" placeholder="Year">
                     </div>
                     <div class="form-row">
                         <input type="text" id="examType" placeholder="Type (A/L or O/L)">
@@ -73,69 +54,43 @@
                         <input type="text" id="examIcon" placeholder="Icon (e.g., 📚)">
                         <input type="text" id="examColor" placeholder="Color (e.g., #667eea)">
                     </div>
-                    <label class="checkbox-label">
-                        <input type="checkbox" id="examFeatured">
-                        <span>Mark as Featured Exam</span>
-                    </label>
-                    <button onclick="saveExam()" class="btn-success">
-                        <i class="fas fa-plus"></i> Add Exam
-                    </button>
+                    <label class="checkbox-label"><input type="checkbox" id="examFeatured"> <span>Featured Exam</span></label>
+                    <button onclick="saveExam()" class="btn-success"><i class="fas fa-plus"></i> Add Exam</button>
                     <div id="examList" class="list-container"></div>
                 </div>
 
-                <!-- Notification Management -->
                 <div class="admin-card">
                     <h3><i class="fas fa-bell"></i> Manage Notifications</h3>
-                    <input type="text" id="notifTitle" placeholder="Notification Title">
-                    <textarea id="notifMessage" placeholder="Message content..."></textarea>
+                    <input type="text" id="notifTitle" placeholder="Title">
+                    <textarea id="notifMessage" placeholder="Message"></textarea>
                     <div class="form-row">
-                        <div class="file-upload">
-                            <label>Image (optional)</label>
-                            <input type="file" id="notifImage" accept="image/*">
-                        </div>
-                        <div class="file-upload">
-                            <label>PDF (optional)</label>
-                            <input type="file" id="notifPDF" accept=".pdf">
-                        </div>
+                        <div class="file-upload"><label>Image</label><input type="file" id="notifImage" accept="image/*"></div>
+                        <div class="file-upload"><label>PDF</label><input type="file" id="notifPDF" accept=".pdf"></div>
                     </div>
-                    <label class="checkbox-label">
-                        <input type="checkbox" id="showUntilDismissed">
-                        <span>Show until manually turned off</span>
-                    </label>
-                    <button onclick="saveNotification()" class="btn-success">
-                        <i class="fas fa-paper-plane"></i> Send Notification
-                    </button>
+                    <label class="checkbox-label"><input type="checkbox" id="showUntilDismissed"> <span>Show until dismissed</span></label>
+                    <button onclick="saveNotification()" class="btn-success"><i class="fas fa-paper-plane"></i> Send</button>
                     <div id="notifList" class="list-container"></div>
                 </div>
 
-                <!-- Quote Management -->
                 <div class="admin-card">
                     <h3><i class="fas fa-quote-left"></i> Manage Quotes</h3>
-                    <textarea id="quoteText" placeholder="Enter motivational quote..."></textarea>
-                    <input type="text" id="quoteAuthor" placeholder="Author (optional)">
+                    <textarea id="quoteText" placeholder="Quote text"></textarea>
+                    <input type="text" id="quoteAuthor" placeholder="Author">
                     <select id="quoteCategory">
                         <option value="motivation">Motivation</option>
                         <option value="success">Success</option>
                         <option value="perseverance">Perseverance</option>
                         <option value="education">Education</option>
                     </select>
-                    <button onclick="saveQuote()" class="btn-success">
-                        <i class="fas fa-plus"></i> Add Quote
-                    </button>
+                    <button onclick="saveQuote()" class="btn-success"><i class="fas fa-plus"></i> Add Quote</button>
                     <div id="quoteList" class="list-container"></div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Loading Overlay -->
-    <div id="loadingOverlay" class="loading-overlay">
-        <div class="spinner"></div>
-    </div>
-
-    <!-- Toast -->
+    <div id="loadingOverlay" class="loading-overlay"><div class="spinner"></div></div>
     <div id="toast" class="toast"></div>
-
     <script type="module" src="admin.js"></script>
 </body>
 </html>
