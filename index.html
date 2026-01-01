@@ -7,22 +7,36 @@
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="manifest" href="manifest.json">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <meta name="theme-color" content="#0a0e27">
 </head>
 <body>
     <!-- Loading Screen -->
     <div id="loadingScreen" class="loading-screen">
-        <div class="loader-content">
-            <div class="loader-ring"></div>
-            <div class="loader-dots">
-                <span></span>
-                <span></span>
-                <span></span>
+        <div class="loader-container">
+            <div class="loader-logo">
+                <i class="fas fa-graduation-cap"></i>
             </div>
-            <h2>EXAM MASTER</h2>
-            <p>Loading your study companion...</p>
+            <div class="loader-text">
+                <h1>EXAM<span>MASTER</span></h1>
+                <div class="loader-dots">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </div>
+            <div class="loader-progress">
+                <div class="progress-bar"></div>
+                <span class="progress-text">0%</span>
+            </div>
         </div>
+    </div>
+
+    <!-- Animated Background -->
+    <div class="animated-bg">
+        <div class="gradient-orb orb1"></div>
+        <div class="gradient-orb orb2"></div>
+        <div class="gradient-orb orb3"></div>
     </div>
 
     <!-- Snowflakes Container -->
@@ -32,8 +46,10 @@
     <nav class="navbar">
         <div class="nav-container">
             <div class="logo">
-                <i class="fas fa-graduation-cap"></i>
-                <span>EXAM<strong>MASTER</strong></span>
+                <div class="logo-icon">
+                    <i class="fas fa-graduation-cap"></i>
+                </div>
+                <span class="logo-text">EXAM<span class="logo-bold">MASTER</span></span>
             </div>
             <div class="nav-actions">
                 <button class="icon-btn" onclick="toggleThemePanel()" aria-label="Theme">
@@ -121,21 +137,29 @@
         </div>
     </div>
 
-    <!-- Persistent Popup -->
+    <!-- Modern Popup -->
     <div id="persistentPopup" class="persistent-popup" style="display:none;">
         <div class="popup-overlay" onclick="closePopup()"></div>
-        <div class="popup-card">
-            <button class="popup-close" onclick="closePopup()">×</button>
-            <div class="popup-icon"><i class="fas fa-bell"></i></div>
-            <h2 id="popupTitle"></h2>
-            <p id="popupMessage"></p>
-            <div id="popupImage" style="display:none;">
-                <img id="popupImg" src="" alt="">
+        <div class="popup-card-modern">
+            <div class="popup-header">
+                <div class="popup-icon-wrapper">
+                    <i class="fas fa-bell"></i>
+                </div>
+                <button class="popup-close-modern" onclick="closePopup()">
+                    <i class="fas fa-times"></i>
+                </button>
             </div>
-            <div id="popupButtons" style="display:none;">
-                <a id="popupPdfBtn" href="#" download class="btn-download">
-                    <i class="fas fa-download"></i> Download PDF
-                </a>
+            <div class="popup-body">
+                <h2 id="popupTitle"></h2>
+                <p id="popupMessage"></p>
+                <div id="popupImage" style="display:none;">
+                    <img id="popupImg" src="" alt="">
+                </div>
+                <div id="popupButtons" style="display:none;">
+                    <a id="popupPdfBtn" href="#" download class="btn-download-modern">
+                        <i class="fas fa-download"></i> Download PDF
+                    </a>
+                </div>
             </div>
         </div>
     </div>
@@ -143,51 +167,55 @@
     <div class="container">
         <!-- Hero Section -->
         <div class="hero-section">
-            <div class="hero-bg-effect"></div>
-            <h1 class="main-title">A/L & O/L Exam<br>Countdown</h1>
-            <p class="subtitle">Your path to success starts here</p>
+            <div class="hero-content">
+                <h1 class="main-title">A/L & O/L Exam<br><span class="title-gradient">Countdown</span></h1>
+                <p class="subtitle">Your path to success starts here</p>
 
-            <!-- Exam Selector -->
-            <div class="exam-selector">
-                <div class="exam-grid" id="examGrid"></div>
-            </div>
+                <!-- Exam Selector -->
+                <div class="exam-selector">
+                    <div class="exam-grid" id="examGrid"></div>
+                </div>
 
-            <!-- Selected Exam -->
-            <div class="selected-exam" id="selectedExam">
-                <span class="exam-badge">
-                    <span class="badge-dot"></span>
-                    <span id="examBadgeText">Loading...</span>
-                </span>
-                <span class="live-indicator">Live</span>
-            </div>
+                <!-- Selected Exam -->
+                <div class="selected-exam" id="selectedExam">
+                    <span class="exam-badge">
+                        <span class="badge-dot"></span>
+                        <span id="examBadgeText">Loading...</span>
+                    </span>
+                    <span class="live-indicator">
+                        <span class="live-dot"></span>
+                        Live
+                    </span>
+                </div>
 
-            <!-- Countdown -->
-            <div class="countdown-display">
-                <div class="countdown-grid-2x2">
-                    <div class="time-box">
-                        <div class="time-value" id="days">00</div>
-                        <div class="time-label">DAYS</div>
-                    </div>
-                    <div class="time-box">
-                        <div class="time-value" id="hours">00</div>
-                        <div class="time-label">HOURS</div>
-                    </div>
-                    <div class="time-box">
-                        <div class="time-value" id="minutes">00</div>
-                        <div class="time-label">MINUTES</div>
-                    </div>
-                    <div class="time-box">
-                        <div class="time-value" id="seconds">00</div>
-                        <div class="time-label">SECONDS</div>
+                <!-- Countdown -->
+                <div class="countdown-display">
+                    <div class="countdown-grid-2x2">
+                        <div class="time-box">
+                            <div class="time-value" id="days">00</div>
+                            <div class="time-label">DAYS</div>
+                        </div>
+                        <div class="time-box">
+                            <div class="time-value" id="hours">00</div>
+                            <div class="time-label">HOURS</div>
+                        </div>
+                        <div class="time-box">
+                            <div class="time-value" id="minutes">00</div>
+                            <div class="time-label">MINUTES</div>
+                        </div>
+                        <div class="time-box">
+                            <div class="time-value" id="seconds">00</div>
+                            <div class="time-label">SECONDS</div>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Quote -->
-            <div class="quote-card">
-                <i class="fas fa-quote-left"></i>
-                <p id="dailyQuote">Loading...</p>
-                <i class="fas fa-quote-right"></i>
+                <!-- Quote -->
+                <div class="quote-card">
+                    <i class="fas fa-quote-left quote-icon"></i>
+                    <p id="dailyQuote">Loading...</p>
+                    <i class="fas fa-quote-right quote-icon"></i>
+                </div>
             </div>
         </div>
 
@@ -196,27 +224,44 @@
             <!-- AI Card -->
             <div class="feature-card ai-card">
                 <div class="card-header">
-                    <i class="fas fa-robot"></i>
+                    <div class="card-icon ai-icon">
+                        <i class="fas fa-robot"></i>
+                    </div>
                     <h2>AI Assistant</h2>
                 </div>
-                <div class="ai-chat-box" id="aiChatBox">
-                    <div class="ai-message ai-message-bot">
-                        <div class="message-avatar"><i class="fas fa-robot"></i></div>
-                        <div class="message-content">Hello! I'm your study assistant. How can I help you today? 📚</div>
+                <div class="ai-chat-container">
+                    <div class="ai-chat-box" id="aiChatBox">
+                        <div class="ai-message ai-message-bot">
+                            <div class="message-avatar">
+                                <i class="fas fa-robot"></i>
+                            </div>
+                            <div class="message-content">
+                                <span class="typing-text">Hello! I'm your AI study assistant. How can I help you today? 📚</span>
+                            </div>
+                        </div>
                     </div>
-                </div>
-                <div class="ai-input-area">
-                    <input type="text" id="aiInput" placeholder="Ask me anything..." class="ai-input">
-                    <button onclick="sendAIMessage()" class="ai-send-btn">
-                        <i class="fas fa-paper-plane"></i>
-                    </button>
+                    <div class="ai-input-container">
+                        <div class="input-wrapper">
+                            <input type="text" id="aiInput" placeholder="Ask me anything..." class="ai-input">
+                            <button onclick="sendAIMessage()" class="ai-send-btn">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                        <div class="ai-suggestions">
+                            <span class="suggestion-chip" onclick="setAIQuery('Math tips')">Math tips</span>
+                            <span class="suggestion-chip" onclick="setAIQuery('Study plan')">Study plan</span>
+                            <span class="suggestion-chip" onclick="setAIQuery('Exam prep')">Exam prep</span>
+                        </div>
+                    </div>
                 </div>
             </div>
 
             <!-- Timer Card -->
             <div class="feature-card timer-card">
                 <div class="card-header">
-                    <i class="fas fa-clock"></i>
+                    <div class="card-icon timer-icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
                     <h2>Study Timer</h2>
                 </div>
                 <div class="timer-display">
@@ -247,48 +292,49 @@
                 </div>
             </div>
 
-            <!-- Progress Card -->
-            <div class="feature-card progress-card">
+            <!-- Study Resources Card -->
+            <div class="feature-card resources-card">
                 <div class="card-header">
-                    <i class="fas fa-chart-line"></i>
-                    <h2>Study Progress</h2>
+                    <div class="card-icon resources-icon">
+                        <i class="fas fa-book-open"></i>
+                    </div>
+                    <h2>Study Resources</h2>
                 </div>
-                <div class="progress-stats">
-                    <div class="progress-item">
-                        <div class="progress-info">
-                            <span>Mathematics</span>
-                            <span>75%</span>
+                <div class="resources-grid">
+                    <div class="resource-item" onclick="openResource('past-papers')">
+                        <div class="resource-icon">
+                            <i class="fas fa-file-alt"></i>
                         </div>
-                        <div class="progress-bar">
-                            <div class="progress-fill" style="width: 75%"></div>
-                        </div>
+                        <span>Past Papers</span>
                     </div>
-                    <div class="progress-item">
-                        <div class="progress-info">
-                            <span>Science</span>
-                            <span>60%</span>
+                    <div class="resource-item" onclick="openResource('notes')">
+                        <div class="resource-icon">
+                            <i class="fas fa-sticky-note"></i>
                         </div>
-                        <div class="progress-bar">
-                            <div class="progress-fill" style="width: 60%"></div>
-                        </div>
+                        <span>Notes</span>
                     </div>
-                    <div class="progress-item">
-                        <div class="progress-info">
-                            <span>History</span>
-                            <span>85%</span>
+                    <div class="resource-item" onclick="openResource('videos')">
+                        <div class="resource-icon">
+                            <i class="fas fa-video"></i>
                         </div>
-                        <div class="progress-bar">
-                            <div class="progress-fill" style="width: 85%"></div>
+                        <span>Videos</span>
+                    </div>
+                    <div class="resource-item" onclick="openResource('mock')">
+                        <div class="resource-icon">
+                            <i class="fas fa-clipboard-check"></i>
                         </div>
+                        <span>Mock Tests</span>
                     </div>
                 </div>
-                <button class="btn-secondary">View All Subjects</button>
+                <button class="btn-secondary">View All Resources</button>
             </div>
 
             <!-- Offline Card -->
             <div class="feature-card offline-card">
                 <div class="card-header">
-                    <i class="fas fa-wifi"></i>
+                    <div class="card-icon offline-icon">
+                        <i class="fas fa-wifi"></i>
+                    </div>
                     <h2>Offline Mode</h2>
                 </div>
                 <div class="offline-status">
@@ -325,7 +371,7 @@
             <div class="footer-content">
                 <div class="footer-logo">
                     <i class="fas fa-graduation-cap"></i>
-                    <h3>EXAM<strong>MASTER</strong></h3>
+                    <h3>EXAM<span class="footer-bold">MASTER</span></h3>
                     <p>Your Study Companion</p>
                 </div>
                 <div class="footer-links">
