@@ -1,127 +1,51 @@
-// ================================
-// EXAM MASTER - Complete JavaScript
+// ==========================================
+// EXAM MASTER SL - ප්‍රධාන යෙදුම් ගොනුව
 // ==========================================
 
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 
-// ==========================================
-// CONFIGURATION
-// ==========================================
+// Supabase Configuration
 const SUPABASE_CONFIG = {
-    url: 'https://nstnkxtxlqelwnefkmaj.supabase.co', // ඔබේ Supabase URL
-    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5zdG5reHR4bHFlbHduZWZrbWFqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2Njg0NTc0OCwiZXhwIjoyMDgyNDIxNzQ4fQ.7nxY8FIR05sbZ33e4-hpZx6n8l-WA-gnlk2pOwxo2z4' // ඔබේ anon key
+    url: 'https://nstnkxtxlqelwnefkmaj.supabase.co',
+    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5zdG5reHR4bHFlbHduZWZrbWFqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2Njg0NTc0OCwiZXhwIjoyMDgyNDIxNzQ4fQ.7nxY8FIR05sbZ33e4-hpZx6n8l-WA-gnlk2pOwxo2z4'
 };
-
-const CLAUDE_API_KEY = 'YOUR_CLAUDE_API_KEY_HERE'; // ඔබේ Claude API key
 
 const supabase = createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey);
 
-// ==========================================
-// STATE
-// ==========================================
-let selectedExamId = null;
-let countdownInterval = null;
-let timerInterval = null;
-let timerSeconds = 1500; // 25 minutes
-let timerRunning = false;
+// Global Variables
+let activeNotifications = [];
+let effectCanvas = null;
+let effectCtx = null;
+let effectAnimationId = null;
+let isFirstVisit = true;
 
 // ==========================================
 // INITIALIZATION
 // ==========================================
-document.addEventListener('DOMContentLoaded', () => {
-    initializeApp();
+document.addEventListener('DOMContentLoaded', async () => {
+    // Hide loading overlay
+    setTimeout(() => {
+        document.getElementById('loadingOverlay').style.display = 'none';
+    }, 1500);
+    
+    // 1. Load Exams
+    await loadExams();
+    
+    // 2. Check Notifications
+    await checkNotifications();
+    
+    // 3. Load Chat
+    await loadChat();
+    
+    // 4. Initialize Effects
+    await initEffects();
+    
+    // 5. Check if first visit for popup
+    checkFirstVisit();
 });
 
-async function initializeApp() {
-    // Hide loading screen
-    setTimeout(() => {
-        document.getElementById('loadingScreen').style.display = 'none';
-    }, 2000);
-
-    // Load preferences
-    loadTheme();
-    loadProfile();
-    
-    // Initialize features
-    await loadExams();
-    await loadDailyQuote();
-    await loadPersistentNotification();
-    setupEventListeners();
-    checkConnection();
-    createSnowflakes();
-    checkNewYear();
-    
-    console.log('🎓 Exam Master initialized!');
-}
-
 // ==========================================
-// THEME MANAGEMENT
-// ==========================================
-function loadTheme() {
-    const theme = localStorage.getItem('exam-master-theme') || 'default';
-    document.body.setAttribute('data-theme', theme);
-}
-
-function setTheme(theme) {
-    document.body.setAttribute('data-theme', theme);
-    localStorage.setItem('exam-master-theme', theme);
-    closeThemePanel();
-    showToast(`Theme changed to ${theme}! ✨`);
-}
-
-function toggleThemePanel() {
-    const panel = document.getElementById('themePanel');
-    const profilePanel = document.getElementById('profilePanel');
-    profilePanel.classList.remove('active');
-    panel.classList.toggle('active');
-}
-
-function closeThemePanel() {
-    document.getElementById('themePanel').classList.remove('active');
-}
-
-// ==========================================
-// PROFILE MANAGEMENT
-// ==========================================
-function loadProfile() {
-    const name = localStorage.getItem('exam-master-name') || '';
-    const avatar = localStorage.getItem('exam-master-avatar') || 'https://api.dicebear.com/7.x/avataaars/svg?seed=student';
-    
-    document.getElementById('userName').value = name;
-    document.getElementById('currentAvatar').src = avatar;
-}
-
-function toggleProfile() {
-    const panel = document.getElementById('profilePanel');
-    const themePanel = document.getElementById('themePanel');
-    themePanel.classList.remove('active');
-    panel.classList.toggle('active');
-}
-
-function changeAvatar() {
-    const seed = Math.random().toString(36).substring(7);
-    const avatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${seed}`;
-    document.getElementById('currentAvatar').src = avatar;
-    localStorage.setItem('exam-master-avatar', avatar);
-    showToast('Avatar changed! 🎨');
-}
-
-function saveProfile() {
-    const name = document.getElementById('userName').value.trim();
-    localStorage.setItem('exam-master-name', name);
-    toggleProfile();
-    showToast('Profile saved! ✅');
-}
-
-function toggleMenu() {
-    const menu = document.getElementById('mobileMenu');
-    if (menu) {
-        menu.classList.toggle('active');
-    }
-}
-
-// ==========================================
-// EXAM SELECTOR
+// 1. EXAM COUNTDOWN SYSTEM
 // ==========================================
 async function loadExams() {
     try {
@@ -129,552 +53,572 @@ async function loadExams() {
             .from('exams')
             .select('*')
             .eq('status', 'enabled')
-            .order('is_featured', { ascending: false })
             .order('exam_date', { ascending: true });
-        
+
         if (error) throw error;
+
+        const grid = document.getElementById('examGrid');
+        grid.innerHTML = '';
         
         if (data && data.length > 0) {
-            renderExamButtons(data);
-            // Select first exam (featured or first available)
-            const featuredExam = data.find(e => e.is_featured) || data[0];
-            selectExam(featuredExam.id, data);
+            data.forEach(exam => {
+                const card = createExamCard(exam);
+                grid.appendChild(card);
+                startTimerForExam(exam);
+            });
         } else {
-            // Fallback to localStorage
-            loadExamsFromLocalStorage();
+            grid.innerHTML = `
+                <div class="exam-card" style="grid-column: 1/-1; text-align: center; padding: 40px;">
+                    <i class="fas fa-calendar-times" style="font-size: 3rem; color: var(--nt-muted); margin-bottom: 20px;"></i>
+                    <h3 style="color: var(--nt-text); margin-bottom: 10px;">දැනට සක්‍රිය විභාග නොමැත</h3>
+                    <p style="color: var(--nt-muted);">නව විභාග එකතු කිරීමට පරිපාලක අඩවියට පිවිසෙන්න</p>
+                </div>
+            `;
         }
-    } catch (err) {
-        console.error('Error loading exams:', err);
-        loadExamsFromLocalStorage();
+    } catch (e) {
+        console.error('Exams Error:', e);
+        showToast('විභාග පූරණය කිරීමේ දෝෂයක්', 'error');
     }
 }
 
-function loadExamsFromLocalStorage() {
-    const localExams = localStorage.getItem('exam-master-exams');
-    if (localExams) {
-        const exams = JSON.parse(localExams);
-        const enabledExams = exams.filter(e => e.status === 'enabled');
-        if (enabledExams.length > 0) {
-            renderExamButtons(enabledExams);
-            selectExam(enabledExams[0].id, enabledExams);
-        }
-    } else {
-        // Default exams
-        const defaultExams = [
-            { id: 1, batch_name: '2025 A/L', exam_year: '2025', exam_type: 'A/L', exam_date: '2025-08-01T09:00:00', icon: '📚', color: '#ff6b6b' },
-            { id: 2, batch_name: '2026 A/L', exam_year: '2026', exam_type: 'A/L', exam_date: '2026-08-01T09:00:00', icon: '🎯', color: '#667eea', is_featured: true },
-            { id: 3, batch_name: '2027 A/L', exam_year: '2027', exam_type: 'A/L', exam_date: '2027-08-01T09:00:00', icon: '🎓', color: '#11998e' },
-            { id: 4, batch_name: '2025 O/L', exam_year: '2025', exam_type: 'O/L', exam_date: '2025-12-01T09:00:00', icon: '📖', color: '#feca57' }
-        ];
-        renderExamButtons(defaultExams);
-        selectExam(2, defaultExams);
-    }
+function createExamCard(exam) {
+    const card = document.createElement('div');
+    card.className = 'exam-card';
+    card.id = `exam-${exam.id}`;
+    
+    card.innerHTML = `
+        <div class="exam-card-content">
+            <h3>${exam.batch_name}</h3>
+            <div class="exam-date">
+                <i class="far fa-calendar-alt"></i>
+                ${new Date(exam.exam_date).toLocaleDateString('si-LK', { 
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                })}
+            </div>
+            
+            <div class="timer-display">
+                <div class="time-unit">
+                    <span class="time-value" id="days-${exam.id}">00</span>
+                    <span class="time-label">දින</span>
+                </div>
+                <div class="time-unit">
+                    <span class="time-value" id="hours-${exam.id}">00</span>
+                    <span class="time-label">පැය</span>
+                </div>
+                <div class="time-unit">
+                    <span class="time-value" id="minutes-${exam.id}">00</span>
+                    <span class="time-label">මිනි</span>
+                </div>
+                <div class="time-unit">
+                    <span class="time-value" id="seconds-${exam.id}">00</span>
+                    <span class="time-label">තත්</span>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    return card;
 }
 
-function renderExamButtons(exams) {
-    const grid = document.getElementById('examGrid');
-    grid.innerHTML = '';
+function startTimerForExam(exam) {
+    const target = new Date(exam.exam_date).getTime();
     
-    exams.forEach(exam => {
-        const btn = document.createElement('button');
-        btn.className = 'exam-btn';
-        btn.setAttribute('data-exam-id', exam.id);
-        btn.style.setProperty('--exam-color', exam.color || '#667eea');
-        
-        btn.innerHTML = `
-            <span class="exam-icon">${exam.icon || '📚'}</span>
-            <span class="exam-label">${exam.exam_year} ${exam.exam_type}</span>
-        `;
-        
-        btn.addEventListener('click', () => selectExam(exam.id, exams));
-        grid.appendChild(btn);
-    });
-}
-
-function selectExam(examId, exams) {
-    selectedExamId = examId;
-    
-    // Update active button
-    document.querySelectorAll('.exam-btn').forEach(btn => {
-        btn.classList.remove('active');
-        if (parseInt(btn.getAttribute('data-exam-id')) === examId) {
-            btn.classList.add('active');
-        }
-    });
-    
-    // Find exam data
-    const exam = exams.find(e => e.id === examId);
-    if (exam) {
-        // Update badge
-        document.getElementById('examBadgeText').textContent = exam.batch_name;
-        
-        // Start countdown
-        startCountdown(exam.exam_date);
-    }
-}
-
-// ==========================================
-// COUNTDOWN
-// ==========================================
-function startCountdown(examDate) {
-    if (countdownInterval) {
-        clearInterval(countdownInterval);
-    }
-    
-    const targetDate = new Date(examDate).getTime();
-    
-    function updateCountdown() {
+    function updateTimer() {
         const now = new Date().getTime();
-        const distance = targetDate - now;
+        const diff = target - now;
         
-        if (distance < 0) {
-            document.getElementById('examBadgeText').textContent = 'Exam Day is Here! 🎉';
-            setTimeValues(0, 0, 0, 0);
-            clearInterval(countdownInterval);
+        if (diff < 0) {
+            const card = document.getElementById(`exam-${exam.id}`);
+            if (card) {
+                card.querySelector('.timer-display').innerHTML = `
+                    <div style="text-align: center; padding: 20px;">
+                        <span style="color: var(--pk-success); font-weight: bold; font-size: 1.2rem;">
+                            <i class="fas fa-check-circle"></i> විභාගය අවසන්
+                        </span>
+                    </div>
+                `;
+                card.style.opacity = '0.7';
+            }
             return;
         }
         
-        const days = Math.floor(distance / (1000 * 60 * 60 * 24));
-        const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-        const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-        const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
         
-        setTimeValues(days, hours, minutes, seconds);
+        const daysEl = document.getElementById(`days-${exam.id}`);
+        const hoursEl = document.getElementById(`hours-${exam.id}`);
+        const minutesEl = document.getElementById(`minutes-${exam.id}`);
+        const secondsEl = document.getElementById(`seconds-${exam.id}`);
+        
+        if (daysEl) daysEl.textContent = days.toString().padStart(2, '0');
+        if (hoursEl) hoursEl.textContent = hours.toString().padStart(2, '0');
+        if (minutesEl) minutesEl.textContent = minutes.toString().padStart(2, '0');
+        if (secondsEl) secondsEl.textContent = seconds.toString().padStart(2, '0');
     }
     
-    updateCountdown();
-    countdownInterval = setInterval(updateCountdown, 1000);
-}
-
-function setTimeValues(days, hours, minutes, seconds) {
-    document.getElementById('days').textContent = pad(days);
-    document.getElementById('hours').textContent = pad(hours);
-    document.getElementById('minutes').textContent = pad(minutes);
-    document.getElementById('seconds').textContent = pad(seconds);
-}
-
-function pad(num) {
-    return num.toString().padStart(2, '0');
+    updateTimer();
+    setInterval(updateTimer, 1000);
 }
 
 // ==========================================
-// DAILY QUOTE
+// 2. NOTIFICATION SYSTEM
 // ==========================================
-async function loadDailyQuote() {
-    try {
-        const { data, error } = await supabase
-            .from('quotes')
-            .select('*')
-            .eq('is_active', true)
-            .order('created_at', { ascending: false });
-        
-        if (error) throw error;
-        
-        if (data && data.length > 0) {
-            const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
-            const quote = data[dayOfYear % data.length];
-            document.getElementById('dailyQuote').textContent = quote.text;
-        } else {
-            setDefaultQuote();
-        }
-    } catch (err) {
-        console.error('Error loading quote:', err);
-        setDefaultQuote();
-    }
-}
-
-function setDefaultQuote() {
-    const quotes = [
-        "Success is the sum of small efforts repeated day in and day out.",
-        "The expert in anything was once a beginner.",
-        "Don't watch the clock; do what it does. Keep going.",
-        "Dream it. Believe it. Build it."
-    ];
-    const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
-    document.getElementById('dailyQuote').textContent = quotes[dayOfYear % quotes.length];
-}
-
-// ==========================================
-// PERSISTENT NOTIFICATION
-// ==========================================
-async function loadPersistentNotification() {
+async function checkNotifications() {
     try {
         const { data, error } = await supabase
             .from('notifications')
             .select('*')
             .eq('is_active', true)
-            .eq('show_until_dismissed', true)
-            .order('priority', { ascending: false })
-            .limit(1);
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        activeNotifications = data || [];
+        updateNotificationBadge();
+        
+        // Store last seen notification ID
+        if (activeNotifications.length > 0) {
+            const latestId = activeNotifications[0].id;
+            localStorage.setItem('last_seen_notif', latestId);
+        }
+        
+    } catch (err) {
+        console.error('Notification Error:', err);
+    }
+}
+
+function updateNotificationBadge() {
+    const badge = document.getElementById('notifBadge');
+    if (activeNotifications.length > 0) {
+        badge.textContent = activeNotifications.length;
+        badge.style.display = 'flex';
+    } else {
+        badge.style.display = 'none';
+    }
+}
+
+function checkFirstVisit() {
+    const lastSeen = localStorage.getItem('last_seen_notif');
+    const hasPersistentNotifications = activeNotifications.some(n => n.show_until_dismissed);
+    
+    if (isFirstVisit && hasPersistentNotifications) {
+        setTimeout(() => {
+            openNotifModal();
+            isFirstVisit = false;
+        }, 2000);
+    }
+}
+
+async function openNotifModal() {
+    const modal = document.getElementById('notifModal');
+    const contentDiv = document.getElementById('modalNotifContent');
+    
+    // Mark as seen
+    if (activeNotifications.length > 0) {
+        localStorage.setItem('last_seen_notif', activeNotifications[0].id);
+    }
+    
+    updateNotificationBadge();
+    
+    if (activeNotifications.length === 0) {
+        contentDiv.innerHTML = `
+            <div style="text-align: center; padding: 40px 20px;">
+                <i class="far fa-bell" style="font-size: 3rem; color: var(--nt-muted); margin-bottom: 20px;"></i>
+                <h4 style="color: var(--nt-text); margin-bottom: 10px;">දැනට විශේෂ නිවේදන නොමැත</h4>
+                <p style="color: var(--nt-muted);">නව නිවේදන සඳහා නිතර පරීක්ෂා කරන්න</p>
+            </div>
+        `;
+    } else {
+        contentDiv.innerHTML = activeNotifications.map(notif => {
+            let mediaContent = '';
+            
+            if (notif.image_url) {
+                mediaContent += `
+                    <div class="notification-media">
+                        <img src="${notif.image_url}" alt="Notification Image" class="notification-image" 
+                             onerror="this.style.display='none'">
+                    </div>
+                `;
+            }
+            
+            if (notif.pdf_url) {
+                mediaContent += `
+                    <div class="notification-actions">
+                        <a href="${notif.pdf_url}" target="_blank" class="btn btn-pdf">
+                            <i class="fas fa-file-pdf"></i> PDF බාගත කරන්න
+                        </a>
+                    </div>
+                `;
+            }
+
+            return `
+                <div class="notification-item">
+                    <div class="notification-header">
+                        <div class="notification-title">${notif.title}</div>
+                        <div class="notification-date">
+                            ${new Date(notif.created_at).toLocaleDateString('si-LK')}
+                        </div>
+                    </div>
+                    
+                    <div class="notification-message">${notif.message || ''}</div>
+                    
+                    ${mediaContent}
+                </div>
+            `;
+        }).join('');
+    }
+    
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+}
+
+function closeNotifModal() {
+    const modal = document.getElementById('notifModal');
+    modal.style.display = 'none';
+    document.body.style.overflow = 'auto';
+}
+
+// ==========================================
+// 3. CHAT SYSTEM
+// ==========================================
+async function loadChat() {
+    // Load saved name
+    const savedName = localStorage.getItem('chat_user_name');
+    if (savedName) {
+        document.getElementById('chatName').value = savedName;
+    }
+
+    // Fetch existing comments
+    await fetchComments();
+
+    // Subscribe to real-time updates
+    supabase
+        .channel('public:comments')
+        .on('postgres_changes', { 
+            event: 'INSERT', 
+            schema: 'public', 
+            table: 'comments' 
+        }, payload => {
+            appendComment(payload.new);
+        })
+        .subscribe();
+}
+
+async function fetchComments() {
+    const box = document.getElementById('chatBox');
+    try {
+        const { data, error } = await supabase
+            .from('comments')
+            .select('*')
+            .order('created_at', { ascending: true })
+            .limit(50);
+
+        if (error) throw error;
+
+        // Remove welcome message if exists
+        const welcomeMsg = box.querySelector('.chat-welcome');
+        if (welcomeMsg) {
+            welcomeMsg.remove();
+        }
+
+        box.innerHTML = '';
+        data.forEach(comment => appendComment(comment));
+        scrollToBottom();
+    } catch (err) {
+        console.error('Chat Error:', err);
+    }
+}
+
+function appendComment(comment) {
+    const box = document.getElementById('chatBox');
+    const myName = localStorage.getItem('chat_user_name');
+    const isMe = comment.user_name === myName;
+    
+    const msgDiv = document.createElement('div');
+    msgDiv.className = `chat-message ${isMe ? 'user' : 'other'}`;
+    
+    const time = new Date(comment.created_at).toLocaleTimeString('si-LK', { 
+        hour: '2-digit', 
+        minute: '2-digit' 
+    });
+    
+    msgDiv.innerHTML = `
+        <div class="message-header">
+            <span class="message-sender">${comment.user_name}</span>
+            <span class="message-time">${time}</span>
+        </div>
+        <div class="message-content">${comment.message}</div>
+    `;
+    
+    box.appendChild(msgDiv);
+    scrollToBottom();
+}
+
+function scrollToBottom() {
+    const box = document.getElementById('chatBox');
+    box.scrollTop = box.scrollHeight;
+}
+
+async function sendComment() {
+    const nameInput = document.getElementById('chatName');
+    const msgInput = document.getElementById('chatMessage');
+    
+    const name = nameInput.value.trim();
+    const message = msgInput.value.trim();
+    
+    if (!name) {
+        showToast('කරුණාකර ඔබේ නම ඇතුළත් කරන්න', 'warning');
+        nameInput.focus();
+        return;
+    }
+    
+    if (!message) {
+        showToast('කරුණාකර පණිවිඩය ඇතුළත් කරන්න', 'warning');
+        msgInput.focus();
+        return;
+    }
+    
+    // Save name to localStorage
+    localStorage.setItem('chat_user_name', name);
+    
+    try {
+        const { error } = await supabase
+            .from('comments')
+            .insert([{ 
+                user_name: name, 
+                message: message 
+            }]);
         
         if (error) throw error;
         
-        if (data && data.length > 0) {
-            showPersistentPopup(data[0]);
-        }
+        // Clear message input
+        msgInput.value = '';
+        msgInput.focus();
+        
     } catch (err) {
-        console.error('Error loading notification:', err);
+        console.error('Send Comment Error:', err);
+        showToast('පණිවිඩය යැවීමේ දෝෂයක්', 'error');
     }
-}
-
-function showPersistentPopup(notification) {
-    const popup = document.getElementById('persistentPopup');
-    
-    document.getElementById('popupTitle').textContent = notification.title;
-    document.getElementById('popupMessage').textContent = notification.message;
-    
-    if (notification.image_url) {
-        document.getElementById('popupImg').src = notification.image_url;
-        document.getElementById('popupImage').style.display = 'block';
-    } else {
-        document.getElementById('popupImage').style.display = 'none';
-    }
-    
-    if (notification.pdf_url) {
-        const pdfBtn = document.getElementById('popupPdfBtn');
-        pdfBtn.href = notification.pdf_url;
-        pdfBtn.download = notification.pdf_filename || 'document.pdf';
-        document.getElementById('popupButtons').style.display = 'block';
-    } else {
-        document.getElementById('popupButtons').style.display = 'none';
-    }
-    
-    popup.style.display = 'flex';
-}
-
-function closePopup() {
-    document.getElementById('persistentPopup').style.display = 'none';
 }
 
 // ==========================================
-// AI ASSISTANT (Claude API)
+// 4. SEASONAL EFFECTS SYSTEM
 // ==========================================
-async function sendAIMessage() {
-    const input = document.getElementById('aiInput');
-    const message = input.value.trim();
+async function initEffects() {
+    effectCanvas = document.getElementById('effectCanvas');
+    effectCtx = effectCanvas.getContext('2d');
     
-    if (!message) return;
-    
-    // Add user message
-    addAIMessage(message, 'user');
-    input.value = '';
-    
-    // Show typing indicator
-    addTypingIndicator();
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
     
     try {
-        const response = await fetch('https://api.anthropic.com/v1/messages', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-api-key': CLAUDE_API_KEY,
-                'anthropic-version': '2023-06-01'
-            },
-            body: JSON.stringify({
-                model: 'claude-sonnet-4-20250514',
-                max_tokens: 1024,
-                messages: [{
-                    role: 'user',
-                    content: message
-                }]
-            })
-        });
+        const { data } = await supabase
+            .from('site_settings')
+            .select('*');
         
-        removeTypingIndicator();
-        
-        if (!response.ok) {
-            throw new Error('API request failed');
-        }
-        
-        const data = await response.json();
-        const reply = data.content[0].text;
-        
-        addAIMessage(reply, 'bot');
-    } catch (err) {
-        console.error('AI Error:', err);
-        removeTypingIndicator();
-        addAIMessage('Sorry, I encountered an error. Please try again! 🙏', 'bot');
-    }
-}
-
-function askAI(question) {
-    document.getElementById('aiInput').value = question;
-    sendAIMessage();
-}
-
-function addAIMessage(text, sender) {
-    const chatBox = document.getElementById('aiChatBox');
-    const msgDiv = document.createElement('div');
-    msgDiv.className = `ai-message ai-message-${sender}`;
-    
-    msgDiv.innerHTML = `
-        <div class="message-avatar">
-            <i class="fas fa-${sender === 'user' ? 'user' : 'robot'}"></i>
-        </div>
-        <div class="message-content">${text}</div>
-    `;
-    
-    chatBox.appendChild(msgDiv);
-    chatBox.scrollTop = chatBox.scrollHeight;
-}
-
-function addTypingIndicator() {
-    const chatBox = document.getElementById('aiChatBox');
-    const indicator = document.createElement('div');
-    indicator.className = 'ai-message ai-message-bot typing-indicator';
-    indicator.innerHTML = `
-        <div class="message-avatar">
-            <i class="fas fa-robot"></i>
-        </div>
-        <div class="message-content">
-            <span class="typing-dot"></span>
-            <span class="typing-dot"></span>
-            <span class="typing-dot"></span>
-        </div>
-    `;
-    chatBox.appendChild(indicator);
-    chatBox.scrollTop = chatBox.scrollHeight;
-}
-
-function removeTypingIndicator() {
-    const indicator = document.querySelector('.typing-indicator');
-    if (indicator) {
-        indicator.remove();
-    }
-}
-
-// ==========================================
-// STUDY TIMER
-// ==========================================
-function startTimer() {
-    if (timerRunning) return;
-    
-    timerRunning = true;
-    document.getElementById('startBtn').style.display = 'none';
-    document.getElementById('pauseBtn').style.display = 'inline-block';
-    
-    timerInterval = setInterval(() => {
-        timerSeconds--;
-        updateTimerDisplay();
-        
-        if (timerSeconds <= 0) {
-            pauseTimer();
-            showToast('Timer complete! Great job! 🎉');
-            playNotificationSound();
-        }
-    }, 1000);
-}
-
-function pauseTimer() {
-    timerRunning = false;
-    clearInterval(timerInterval);
-    document.getElementById('startBtn').style.display = 'inline-block';
-    document.getElementById('pauseBtn').style.display = 'none';
-}
-
-function resetTimer() {
-    pauseTimer();
-    timerSeconds = 1500;
-    updateTimerDisplay();
-}
-
-function updateTimerDisplay() {
-    const minutes = Math.floor(timerSeconds / 60);
-    const seconds = timerSeconds % 60;
-    document.getElementById('timerDisplay').textContent = `${pad(minutes)}:${pad(seconds)}`;
-    
-    // Update progress circle
-    const progress = document.getElementById('timerProgress');
-    const percent = (timerSeconds / 1500) * 565;
-    progress.style.strokeDashoffset = 565 - percent;
-}
-
-function playNotificationSound() {
-    // Browser notification
-    if ('Notification' in window && Notification.permission === 'granted') {
-        new Notification('Study Timer', {
-            body: 'Your study session is complete!',
-            icon: '/icon.png'
-        });
-    }
-}
-
-// ==========================================
-// CHRISTMAS/NEW YEAR EFFECTS
-// ==========================================
-function createSnowflakes() {
-    const month = new Date().getMonth();
-    if (month === 11) { // December
-        const container = document.getElementById('snowflakes');
-        for (let i = 0; i < 50; i++) {
-            const snowflake = document.createElement('div');
-            snowflake.className = 'snowflake';
-            snowflake.innerHTML = '❄️';
-            snowflake.style.left = Math.random() * 100 + '%';
-            snowflake.style.animationDuration = (Math.random() * 3 + 2) + 's';
-            snowflake.style.animationDelay = Math.random() * 5 + 's';
-            snowflake.style.fontSize = (Math.random() * 10 + 10) + 'px';
-            snowflake.style.opacity = Math.random();
-            container.appendChild(snowflake);
-        }
-    }
-}
-
-function checkNewYear() {
-    const now = new Date();
-    if (now.getMonth() === 0 && now.getDate() === 1) {
-        showToast('🎉 Happy New Year! Best wishes for your exams! 🎊');
-        setTimeout(() => {
-            createConfetti();
-        }, 1000);
-    }
-}
-
-function createConfetti() {
-    // Simple confetti effect
-    for (let i = 0; i < 100; i++) {
-        const confetti = document.createElement('div');
-        confetti.style.position = 'fixed';
-        confetti.style.width = '10px';
-        confetti.style.height = '10px';
-        confetti.style.backgroundColor = ['#ff6b6b', '#feca57', '#48dbfb', '#1dd1a1'][Math.floor(Math.random() * 4)];
-        confetti.style.left = Math.random() * 100 + '%';
-        confetti.style.top = '-10px';
-        confetti.style.zIndex = '9999';
-        confetti.style.borderRadius = '50%';
-        document.body.appendChild(confetti);
-        
-        let pos = -10;
-        const fall = setInterval(() => {
-            pos += 5;
-            confetti.style.top = pos + 'px';
-            if (pos > window.innerHeight) {
-                clearInterval(fall);
-                confetti.remove();
+        if (data) {
+            const snow = data.find(s => s.setting_key === 'snow_effect');
+            const confetti = data.find(s => s.setting_key === 'confetti_effect');
+            
+            // Stop any existing animation
+            if (effectAnimationId) {
+                cancelAnimationFrame(effectAnimationId);
             }
-        }, 50);
+            
+            if (snow && snow.is_enabled) {
+                startSnowEffect();
+            } else if (confetti && confetti.is_enabled) {
+                startConfettiEffect();
+            }
+        }
+    } catch (e) {
+        console.log('Effects Error:', e);
     }
 }
 
-// ==========================================
-// SHARING
-// ==========================================
-function shareOn(platform) {
-    const url = encodeURIComponent(window.location.href);
-    const text = encodeURIComponent('Check out Exam Master - Study companion for A/L & O/L exams! 📚');
-    
-    let shareUrl;
-    switch(platform) {
-        case 'whatsapp':
-            shareUrl = `https://wa.me/?text=${text}%20${url}`;
-            break;
-        case 'facebook':
-            shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${url}`;
-            break;
-        case 'twitter':
-            shareUrl = `https://twitter.com/intent/tweet?text=${text}&url=${url}`;
-            break;
-    }
-    
-    window.open(shareUrl, '_blank');
+function resizeCanvas() {
+    effectCanvas.width = window.innerWidth;
+    effectCanvas.height = window.innerHeight;
 }
 
-function copyLink() {
-    navigator.clipboard.writeText(window.location.href);
-    showToast('Link copied! 📋');
+// Snow Effect Implementation
+function startSnowEffect() {
+    const particles = [];
+    const particleCount = 100;
+    
+    // Initialize particles
+    for (let i = 0; i < particleCount; i++) {
+        particles.push({
+            x: Math.random() * effectCanvas.width,
+            y: Math.random() * effectCanvas.height,
+            radius: Math.random() * 4 + 1,
+            speed: Math.random() * 1 + 0.5,
+            opacity: Math.random() * 0.5 + 0.3,
+            sway: Math.random() * 0.5 - 0.25
+        });
+    }
+    
+    function drawSnow() {
+        effectCtx.clearRect(0, 0, effectCanvas.width, effectCanvas.height);
+        
+        particles.forEach(particle => {
+            effectCtx.beginPath();
+            effectCtx.arc(particle.x, particle.y, particle.radius, 0, Math.PI * 2);
+            effectCtx.fillStyle = `rgba(255, 255, 255, ${particle.opacity})`;
+            effectCtx.fill();
+            effectCtx.closePath();
+        });
+        
+        updateSnow();
+        effectAnimationId = requestAnimationFrame(drawSnow);
+    }
+    
+    function updateSnow() {
+        particles.forEach(particle => {
+            particle.y += particle.speed;
+            particle.x += particle.sway;
+            
+            // Reset if out of bounds
+            if (particle.y > effectCanvas.height) {
+                particle.y = -10;
+                particle.x = Math.random() * effectCanvas.width;
+            }
+            if (particle.x > effectCanvas.width) {
+                particle.x = 0;
+            } else if (particle.x < 0) {
+                particle.x = effectCanvas.width;
+            }
+        });
+    }
+    
+    drawSnow();
+}
+
+// Confetti Effect Implementation
+function startConfettiEffect() {
+    const particles = [];
+    const colors = ['#667eea', '#764ba2', '#38ef7d', '#ff6b6b', '#ffb74d', '#4cc9f0'];
+    const particleCount = 150;
+    
+    // Initialize particles
+    for (let i = 0; i < particleCount; i++) {
+        particles.push({
+            x: Math.random() * effectCanvas.width,
+            y: Math.random() * effectCanvas.height - effectCanvas.height,
+            color: colors[Math.floor(Math.random() * colors.length)],
+            size: Math.random() * 10 + 5,
+            speed: Math.random() * 3 + 1,
+            angle: Math.random() * 360,
+            rotationSpeed: Math.random() * 5 - 2.5,
+            sway: Math.random() * 2 - 1
+        });
+    }
+    
+    function drawConfetti() {
+        effectCtx.clearRect(0, 0, effectCanvas.width, effectCanvas.height);
+        
+        particles.forEach(particle => {
+            effectCtx.save();
+            effectCtx.translate(particle.x, particle.y);
+            effectCtx.rotate(particle.angle * Math.PI / 180);
+            effectCtx.fillStyle = particle.color;
+            
+            // Draw confetti piece (rectangle)
+            effectCtx.fillRect(-particle.size/2, -particle.size/2, particle.size, particle.size);
+            
+            // Add some sparkle
+            effectCtx.beginPath();
+            effectCtx.arc(0, 0, particle.size/3, 0, Math.PI * 2);
+            effectCtx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+            effectCtx.fill();
+            
+            effectCtx.restore();
+        });
+        
+        updateConfetti();
+        effectAnimationId = requestAnimationFrame(drawConfetti);
+    }
+    
+    function updateConfetti() {
+        particles.forEach(particle => {
+            particle.y += particle.speed;
+            particle.x += particle.sway;
+            particle.angle += particle.rotationSpeed;
+            
+            // Reset if out of bounds
+            if (particle.y > effectCanvas.height) {
+                particle.y = -20;
+                particle.x = Math.random() * effectCanvas.width;
+            }
+            if (particle.x > effectCanvas.width) {
+                particle.x = 0;
+            } else if (particle.x < 0) {
+                particle.x = effectCanvas.width;
+            }
+        });
+    }
+    
+    drawConfetti();
 }
 
 // ==========================================
 // UTILITY FUNCTIONS
 // ==========================================
-function checkConnection() {
-    function updateStatus() {
-        const status = document.getElementById('connectionStatus');
-        if (navigator.onLine) {
-            status.innerHTML = '<div class="status-dot online"></div><span>Connected</span>';
-        } else {
-            status.innerHTML = '<div class="status-dot offline"></div><span>Offline</span>';
-        }
-    }
+function showToast(message, type = 'success') {
+    // Create toast element
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.innerHTML = `
+        <div class="toast-content">
+            <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
+            <span>${message}</span>
+        </div>
+    `;
     
-    updateStatus();
-    window.addEventListener('online', updateStatus);
-    window.addEventListener('offline', updateStatus);
-}
-
-function showToast(message) {
-    const toast = document.getElementById('toast');
-    toast.textContent = message;
-    toast.classList.add('show');
+    // Add styles
+    toast.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: var(--nt-card);
+        color: var(--nt-text);
+        padding: 15px 20px;
+        border-radius: 12px;
+        border-left: 4px solid ${type === 'success' ? 'var(--pk-success)' : type === 'error' ? 'var(--pk-danger)' : 'var(--pk-warning)'};
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        z-index: 1001;
+        transform: translateX(150%);
+        transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        max-width: 350px;
+    `;
     
+    document.body.appendChild(toast);
+    
+    // Animate in
     setTimeout(() => {
-        toast.classList.remove('show');
+        toast.style.transform = 'translateX(0)';
+    }, 10);
+    
+    // Remove after 3 seconds
+    setTimeout(() => {
+        toast.style.transform = 'translateX(150%)';
+        setTimeout(() => {
+            document.body.removeChild(toast);
+        }, 300);
     }, 3000);
 }
 
-function scrollToTop() {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
-function showAbout() {
-    showToast('About section coming soon! 📖');
-}
-
-function showPrivacy() {
-    showToast('Privacy policy coming soon! 🔒');
-}
-
 // ==========================================
-// EVENT LISTENERS
+// EXPORT FUNCTIONS TO WINDOW OBJECT
 // ==========================================
-function setupEventListeners() {
-    // AI input enter key
-    document.getElementById('aiInput').addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-            sendAIMessage();
-        }
-    });
-    
-    // Close panels on outside click
-    document.addEventListener('click', (e) => {
-        const themePanel = document.getElementById('themePanel');
-        const profilePanel = document.getElementById('profilePanel');
-        
-        if (!themePanel.contains(e.target) && !e.target.closest('.icon-btn')) {
-            themePanel.classList.remove('active');
-        }
-        
-        if (!profilePanel.contains(e.target) && !e.target.closest('.icon-btn')) {
-            profilePanel.classList.remove('active');
-        }
-    });
-    
-    // Request notification permission
-    if ('Notification' in window && Notification.permission === 'default') {
-        Notification.requestPermission();
-    }
-}
-
-// ==========================================
-// EXPORT FUNCTIONS
-// ==========================================
-window.setTheme = setTheme;
-window.toggleThemePanel = toggleThemePanel;
-window.toggleProfile = toggleProfile;
-window.changeAvatar = changeAvatar;
-window.saveProfile = saveProfile;
-window.toggleMenu = toggleMenu;
-window.closePopup = closePopup;
-window.sendAIMessage = sendAIMessage;
-window.askAI = askAI;
-window.startTimer = startTimer;
-window.pauseTimer = pauseTimer;
-window.resetTimer = resetTimer;
-window.shareOn = shareOn;
-window.copyLink = copyLink;
-window.scrollToTop = scrollToTop;
-window.showAbout = showAbout;
-window.showPrivacy = showPrivacy;
-
-console.log('🎓 Exam Master loaded successfully!');
-
+window.openNotifModal = openNotifModal;
+window.closeNotifModal = closeNotifModal;
+window.sendComment = sendComment;
