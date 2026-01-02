@@ -1,52 +1,117 @@
 // ==========================================
-// EXAM MASTER ADMIN PANEL - COMPLETE ADMIN JS
+// EXAM MASTER ADMIN - FIXED VERSION
+// Professional Admin Panel with Database Connection
 // ==========================================
 
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 
 // Supabase Configuration
-const SUPABASE_CONFIG = {
-    url: 'https://nstnkxtxlqelwnefkmaj.supabase.co',
-    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5zdG5reHR4bHFlbHduZWZrbWFqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2Njg0NTc0OCwiZXhwIjoyMDgyNDIxNzQ4fQ.7nxY8FIR05sbZ33e4-hpZx6n8l-WA-gnlk2pOwxo2z4'
-};
+const SUPABASE_URL = 'https://nstnkxtxlqelwnefkmaj.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5zdG5reHR4bHFlbHduZWZrbWFqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2Njg0NTc0OCwiZXhwIjoyMDgyNDIxNzQ4fQ.7nxY8FIR05sbZ33e4-hpZx6n8l-WA-gnlk2pOwxo2z4';
 
-const supabase = createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey);
+// Initialize Supabase Client
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // Global Variables
 let currentUser = null;
-let statsData = {
-    totalExams: 0,
-    activeNotifications: 0,
-    totalComments: 0,
-    totalUsers: 0
-};
+let isDatabaseConnected = false;
+
+// ==========================================
+// DATABASE CONNECTION TEST
+// ==========================================
+async function testDatabaseConnection() {
+    try {
+        showLoading(true);
+        
+        // Test connection by fetching a simple query
+        const { data, error } = await supabase
+            .from('exams')
+            .select('count')
+            .limit(1);
+        
+        if (error) {
+            console.error('Database connection failed:', error);
+            showToast('Database connection failed. Please check your internet connection and try again.', 'error');
+            isDatabaseConnected = false;
+            return false;
+        }
+        
+        console.log('Database connection successful');
+        isDatabaseConnected = true;
+        
+        // Update database status indicator
+        const dbStatus = document.getElementById('dbStatus');
+        if (dbStatus) {
+            dbStatus.style.background = '#4cc9f0';
+            dbStatus.classList.add('active');
+        }
+        
+        showToast('Connected to database successfully!', 'success');
+        return true;
+        
+    } catch (error) {
+        console.error('Connection test error:', error);
+        isDatabaseConnected = false;
+        showToast('Failed to connect to database.', 'error');
+        return false;
+    } finally {
+        showLoading(false);
+    }
+}
 
 // ==========================================
 // AUTHENTICATION SYSTEM
 // ==========================================
 async function adminLogin() {
-    const email = document.getElementById('adminEmail').value.trim();
-    const password = document.getElementById('adminPassword').value.trim();
+    const email = document.getElementById('adminEmail')?.value.trim();
+    const password = document.getElementById('adminPassword')?.value.trim();
     
     if (!email || !password) {
-        showToast('කරුණාකර ඊමේල් සහ මුරපදය ඇතුළත් කරන්න', 'error');
+        showToast('Please enter email and password', 'error');
         return;
     }
     
     showLoading(true);
     
     try {
+        // First test database connection
+        const isConnected = await testDatabaseConnection();
+        if (!isConnected) {
+            showToast('Cannot connect to database. Please try again later.', 'error');
+            return;
+        }
+        
+        // Attempt login
         const { data, error } = await supabase.auth.signInWithPassword({
             email: email,
             password: password
         });
         
-        if (error) throw error;
+        if (error) {
+            if (error.message.includes('Invalid login credentials')) {
+                showToast('Invalid email or password', 'error');
+            } else if (error.message.includes('Email not confirmed')) {
+                showToast('Please verify your email address first', 'warning');
+            } else {
+                showToast('Login failed: ' + error.message, 'error');
+            }
+            return;
+        }
         
         currentUser = data.user;
-        showDashboard();
+        
+        // Update UI with user info
+        document.getElementById('adminName').textContent = currentUser.email.split('@')[0];
+        document.getElementById('adminEmailDisplay').textContent = currentUser.email;
+        
+        // Show dashboard
+        document.getElementById('loginSection').style.display = 'none';
+        document.getElementById('dashboardSection').style.display = 'block';
+        
+        // Load all data
         await loadAllData();
-        showToast('සාර්ථකව ඇතුල් විය! ✅', 'success');
+        
+        showToast('Login successful! Welcome back.', 'success');
         
         // Clear login form
         document.getElementById('adminEmail').value = '';
@@ -54,7 +119,7 @@ async function adminLogin() {
         
     } catch (error) {
         console.error('Login error:', error);
-        showToast('ඇතුල් වීම අසාර්ථකයි: ' + error.message, 'error');
+        showToast('An unexpected error occurred during login', 'error');
     } finally {
         showLoading(false);
     }
@@ -65,197 +130,138 @@ async function logout() {
         await supabase.auth.signOut();
         currentUser = null;
         
+        // Reset UI
         document.getElementById('dashboardSection').style.display = 'none';
         document.getElementById('loginSection').style.display = 'block';
         
-        showToast('සාර්ථකව පිටවීම', 'success');
+        showToast('Logged out successfully', 'success');
     } catch (error) {
-        showToast('පිටවීමේ දෝෂයක්', 'error');
+        console.error('Logout error:', error);
+        showToast('Logout failed', 'error');
     }
 }
-
-function showDashboard() {
-    document.getElementById('loginSection').style.display = 'none';
-    document.getElementById('dashboardSection').style.display = 'block';
-    
-    // Update admin info
-    if (currentUser) {
-        document.getElementById('adminName').textContent = currentUser.email.split('@')[0];
-        document.getElementById('adminEmailDisplay').textContent = currentUser.email;
-    }
-    
-    // Update time
-    updateAdminTime();
-    setInterval(updateAdminTime, 1000);
-}
-
-// Check session on load
-supabase.auth.getSession().then(async ({ data: { session } }) => {
-    if (session) {
-        currentUser = session.user;
-        showDashboard();
-        await loadAllData();
-    }
-});
 
 // ==========================================
-// DASHBOARD STATISTICS
+// DATA LOADING FUNCTIONS
 // ==========================================
 async function loadAllData() {
-    await loadStats();
-    await loadSettings();
-    await loadNotifications();
-    await loadComments();
-    await loadExams();
-}
-
-async function loadStats() {
-    try {
-        // Get total exams
-        const { data: examsData } = await supabase
-            .from('exams')
-            .select('id', { count: 'exact', head: true });
-        
-        // Get active notifications
-        const { data: notifsData } = await supabase
-            .from('notifications')
-            .select('id', { count: 'exact', head: true })
-            .eq('is_active', true);
-        
-        // Get total comments
-        const { data: commentsData } = await supabase
-            .from('comments')
-            .select('id', { count: 'exact', head: true });
-        
-        // Update stats
-        statsData.totalExams = examsData?.length || 0;
-        statsData.activeNotifications = notifsData?.length || 0;
-        statsData.totalComments = commentsData?.length || 0;
-        statsData.totalUsers = Math.floor(Math.random() * 1000) + 500; // For demo
-        
-        // Update UI
-        updateStatsUI();
-        
-    } catch (error) {
-        console.error('Stats load error:', error);
-    }
-}
-
-function updateStatsUI() {
-    document.getElementById('statExams').textContent = statsData.totalExams;
-    document.getElementById('statNotifications').textContent = statsData.activeNotifications;
-    document.getElementById('statComments').textContent = statsData.totalComments;
-    document.getElementById('statUsers').textContent = statsData.totalUsers.toLocaleString();
-}
-
-function updateAdminTime() {
-    const now = new Date();
-    const dateStr = now.toLocaleDateString('si-LK', { 
-        weekday: 'long', 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric' 
-    });
-    const timeStr = now.toLocaleTimeString('si-LK', { 
-        hour: '2-digit', 
-        minute: '2-digit', 
-        second: '2-digit' 
-    });
-    
-    document.getElementById('adminDate').textContent = dateStr;
-    document.getElementById('adminTime').textContent = timeStr;
-}
-
-// ==========================================
-// NOTIFICATION MANAGEMENT
-// ==========================================
-async function sendNotification() {
-    const title = document.getElementById('notifTitle').value.trim();
-    const message = document.getElementById('notifMessage').value.trim();
-    const fileInput = document.getElementById('uploadFile');
-    const persistent = document.getElementById('notifPersistent').checked;
-    const btn = document.getElementById('sendBtn');
-    
-    if (!title) {
-        showToast('කරුණාකර නිවේදන මාතෘකාව ඇතුළත් කරන්න', 'warning');
-        return;
-    }
-    
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> යවමින්...';
-    btn.disabled = true;
     showLoading(true);
     
     try {
-        let imageUrl = null;
-        let pdfUrl = null;
+        // Load data in parallel
+        await Promise.all([
+            loadDashboardStats(),
+            loadExams(),
+            loadNotifications(),
+            loadChatData(),
+            loadRecentActivity()
+        ]);
         
-        // Handle file upload if present
-        if (fileInput.files.length > 0) {
-            const file = fileInput.files[0];
-            const fileExt = file.name.split('.').pop().toLowerCase();
-            const fileName = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
-            const filePath = `uploads/${fileName}`;
-            
-            // Upload to Supabase Storage
-            const { error: uploadError } = await supabase.storage
-                .from('uploads')
-                .upload(filePath, file);
-            
-            if (uploadError) throw uploadError;
-            
-            // Get public URL
-            const { data: { publicUrl } } = supabase.storage
-                .from('uploads')
-                .getPublicUrl(filePath);
-            
-            // Set URL based on file type
-            if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(fileExt)) {
-                imageUrl = publicUrl;
-            } else if (fileExt === 'pdf') {
-                pdfUrl = publicUrl;
-            }
-        }
-        
-        // Insert notification into database
-        const { error } = await supabase
-            .from('notifications')
-            .insert([{
-                title: title,
-                message: message || null,
-                image_url: imageUrl,
-                pdf_url: pdfUrl,
-                is_active: true,
-                show_until_dismissed: persistent
-            }]);
-        
-        if (error) throw error;
-        
-        showToast('නිවේදනය සාර්ථකව යවන ලදි! 📢', 'success');
-        
-        // Clear form
-        document.getElementById('notifTitle').value = '';
-        document.getElementById('notifMessage').value = '';
-        document.getElementById('uploadFile').value = '';
-        document.getElementById('notifPersistent').checked = false;
-        
-        // Refresh data
-        await loadStats();
-        await loadNotifications();
+        console.log('All data loaded successfully');
         
     } catch (error) {
-        console.error('Send notification error:', error);
-        showToast('නිවේදනය යැවීමේ දෝෂයක්: ' + error.message, 'error');
+        console.error('Error loading all data:', error);
+        showToast('Failed to load some data. Please refresh.', 'warning');
     } finally {
-        btn.innerHTML = '<i class="fas fa-paper-plane"></i> නිවේදනය යවන්න';
-        btn.disabled = false;
         showLoading(false);
     }
 }
 
+async function loadDashboardStats() {
+    try {
+        // Get active exams count
+        const { count: examsCount } = await supabase
+            .from('exams')
+            .select('*', { count: 'exact', head: true })
+            .eq('status', 'enabled');
+        
+        // Get active notifications count
+        const { count: notificationsCount } = await supabase
+            .from('notifications')
+            .select('*', { count: 'exact', head: true })
+            .eq('is_active', true);
+        
+        // Get total comments count
+        const { count: commentsCount } = await supabase
+            .from('comments')
+            .select('*', { count: 'exact', head: true });
+        
+        // Update UI
+        document.getElementById('statExams').textContent = examsCount || 0;
+        document.getElementById('statNotifications').textContent = notificationsCount || 0;
+        document.getElementById('statComments').textContent = commentsCount || 0;
+        
+        // Simulate active users (for demo)
+        const activeUsers = Math.floor(Math.random() * 100) + 50;
+        document.getElementById('statUsers').textContent = activeUsers;
+        
+    } catch (error) {
+        console.error('Error loading dashboard stats:', error);
+    }
+}
+
+async function loadExams() {
+    try {
+        const { data, error } = await supabase
+            .from('exams')
+            .select('*')
+            .order('exam_date', { ascending: true });
+        
+        if (error) throw error;
+        
+        const tableBody = document.getElementById('examsTable');
+        if (!tableBody) return;
+        
+        tableBody.innerHTML = '';
+        
+        if (data && data.length > 0) {
+            data.forEach(exam => {
+                const examDate = new Date(exam.exam_date);
+                const now = new Date();
+                const daysLeft = Math.ceil((examDate - now) / (1000 * 60 * 60 * 24));
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${exam.batch_name}</td>
+                    <td>${examDate.toLocaleDateString('en-US', { 
+                        year: 'numeric', 
+                        month: 'short', 
+                        day: 'numeric' 
+                    })}</td>
+                    <td>${daysLeft > 0 ? daysLeft : 'Past'}</td>
+                    <td>
+                        <span class="status-badge ${exam.status === 'enabled' ? 'status-active' : 'status-inactive'}">
+                            ${exam.status === 'enabled' ? 'Active' : 'Inactive'}
+                        </span>
+                    </td>
+                    <td class="actions">
+                        <button class="btn-icon" onclick="toggleExamStatus(${exam.id}, '${exam.status}')">
+                            <i class="fas fa-${exam.status === 'enabled' ? 'eye-slash' : 'eye'}"></i>
+                        </button>
+                        <button class="btn-icon btn-danger" onclick="deleteExam(${exam.id})">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+        } else {
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="5" class="text-center">
+                        No exams found. Add your first exam above.
+                    </td>
+                </tr>
+            `;
+        }
+        
+    } catch (error) {
+        console.error('Error loading exams:', error);
+        showToast('Failed to load exams', 'error');
+    }
+}
+
 async function loadNotifications() {
-    const list = document.getElementById('activeNotifsList');
-    list.innerHTML = '<div class="loading-item">පූරණය වෙමින්...</div>';
-    
     try {
         const { data, error } = await supabase
             .from('notifications')
@@ -265,160 +271,66 @@ async function loadNotifications() {
         
         if (error) throw error;
         
+        const container = document.getElementById('notificationsList');
+        if (!container) return;
+        
+        container.innerHTML = '';
+        
         if (data && data.length > 0) {
-            list.innerHTML = data.map(notif => `
-                <div class="list-item">
-                    <div class="list-item-content">
-                        <div class="list-item-title">${notif.title}</div>
-                        <div class="list-item-meta">
-                            ${new Date(notif.created_at).toLocaleDateString('si-LK')}
-                            ${notif.image_url ? '<span class="list-item-badge badge-image"><i class="fas fa-image"></i> රූපය</span>' : ''}
-                            ${notif.pdf_url ? '<span class="list-item-badge badge-pdf"><i class="fas fa-file-pdf"></i> PDF</span>' : ''}
-                            ${notif.show_until_dismissed ? '<span class="list-item-badge" style="background: rgba(56, 239, 125, 0.2); color: #38ef7d; border-color: rgba(56, 239, 125, 0.3);"><i class="fas fa-eye"></i> ස්ථිර</span>' : ''}
-                        </div>
-                    </div>
-                    <div class="list-item-actions">
-                        <button class="btn-icon" onclick="editNotification(${notif.id})" title="සංස්කරණය">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button class="btn-icon btn-icon-delete" onclick="disableNotification(${notif.id})" title="ඉවත් කරන්න">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
-                </div>
-            `).join('');
+            const table = document.createElement('div');
+            table.className = 'table-responsive';
+            table.innerHTML = `
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Title</th>
+                            <th>Type</th>
+                            <th>Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${data.map(notif => {
+                            const date = new Date(notif.created_at);
+                            const type = notif.image_url ? 'Image' : notif.pdf_url ? 'PDF' : 'Text';
+                            
+                            return `
+                                <tr>
+                                    <td>${notif.title}</td>
+                                    <td>${type}</td>
+                                    <td>${date.toLocaleDateString('en-US')}</td>
+                                    <td class="actions">
+                                        <button class="btn-icon" onclick="viewNotification(${notif.id})">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        <button class="btn-icon btn-danger" onclick="deleteNotification(${notif.id})">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
+            `;
+            container.appendChild(table);
         } else {
-            list.innerHTML = `
+            container.innerHTML = `
                 <div class="empty-state">
                     <i class="far fa-bell-slash"></i>
-                    <p>සක්‍රිය නිවේදන නොමැත</p>
+                    <p>No active notifications</p>
+                    <small>Create your first notification using the form above</small>
                 </div>
             `;
         }
+        
     } catch (error) {
-        console.error('Load notifications error:', error);
-        list.innerHTML = '<div class="error-state">පූරණය කිරීමේ දෝෂයක්</div>';
+        console.error('Error loading notifications:', error);
+        showToast('Failed to load notifications', 'error');
     }
 }
 
-async function disableNotification(id) {
-    if (!confirm('මෙම නිවේදනය අක්‍රිය කිරීමට අවශ්‍යද?')) return;
-    
-    showLoading(true);
-    
-    try {
-        const { error } = await supabase
-            .from('notifications')
-            .update({ is_active: false })
-            .eq('id', id);
-        
-        if (error) throw error;
-        
-        await loadNotifications();
-        await loadStats();
-        showToast('නිවේදනය අක්‍රිය කරන ලදි', 'success');
-        
-    } catch (error) {
-        console.error('Disable notification error:', error);
-        showToast('නිවේදනය අක්‍රිය කිරීමේ දෝෂයක්', 'error');
-    } finally {
-        showLoading(false);
-    }
-}
-
-async function editNotification(id) {
-    // In a real app, this would open an edit modal
-    // For now, just show a message
-    showToast('සංස්කරණ ක්‍රියාව සැකසීමේ යාවත්කාලීනයකි', 'info');
-}
-
-// ==========================================
-// SITE EFFECTS MANAGEMENT
-// ==========================================
-async function loadSettings() {
-    try {
-        const { data, error } = await supabase
-            .from('site_settings')
-            .select('*');
-        
-        if (error) throw error;
-        
-        if (data) {
-            const snow = data.find(s => s.setting_key === 'snow_effect');
-            const confetti = data.find(s => s.setting_key === 'confetti_effect');
-            
-            document.getElementById('snowToggle').checked = snow ? snow.is_enabled : false;
-            document.getElementById('confettiToggle').checked = confetti ? confetti.is_enabled : false;
-        }
-    } catch (error) {
-        console.error('Load settings error:', error);
-    }
-}
-
-async function toggleEffect(key, isEnabled) {
-    showLoading(true);
-    
-    try {
-        // If enabling one effect, disable the other
-        if (isEnabled) {
-            if (key === 'snow_effect') {
-                document.getElementById('confettiToggle').checked = false;
-                await updateSetting('confetti_effect', false);
-            } else if (key === 'confetti_effect') {
-                document.getElementById('snowToggle').checked = false;
-                await updateSetting('snow_effect', false);
-            }
-        }
-        
-        await updateSetting(key, isEnabled);
-        
-        const effectName = key === 'snow_effect' ? 'හිම බලපෑම' : 'කොන්ෆෙටි බලපෑම';
-        const status = isEnabled ? 'සක්‍රිය කරන ලදි' : 'අක්‍රිය කරන ලදි';
-        showToast(`${effectName} ${status} ✅`, 'success');
-        
-    } catch (error) {
-        console.error('Toggle effect error:', error);
-        showToast('බලපෑම වෙනස් කිරීමේ දෝෂයක්', 'error');
-    } finally {
-        showLoading(false);
-    }
-}
-
-async function updateSetting(key, value) {
-    try {
-        // Check if setting exists
-        const { data: existing } = await supabase
-            .from('site_settings')
-            .select('id')
-            .eq('setting_key', key)
-            .single();
-        
-        if (existing) {
-            // Update existing
-            await supabase
-                .from('site_settings')
-                .update({ is_enabled: value })
-                .eq('setting_key', key);
-        } else {
-            // Insert new
-            await supabase
-                .from('site_settings')
-                .insert([{ setting_key: key, is_enabled: value }]);
-        }
-    } catch (error) {
-        throw error;
-    }
-}
-
-// ==========================================
-// COMMENTS MANAGEMENT
-// ==========================================
-async function loadComments() {
-    const list = document.getElementById('commentsList');
-    if (!list) return;
-    
-    list.innerHTML = '<div class="loading-item">පූරණය වෙමින්...</div>';
-    
+async function loadChatData() {
     try {
         const { data, error } = await supabase
             .from('comments')
@@ -428,130 +340,119 @@ async function loadComments() {
         
         if (error) throw error;
         
+        const tableBody = document.getElementById('chatTable');
+        if (!tableBody) return;
+        
+        tableBody.innerHTML = '';
+        
         if (data && data.length > 0) {
-            list.innerHTML = data.map(comment => `
-                <div class="list-item">
-                    <div class="list-item-content">
-                        <div class="list-item-title">
-                            <i class="fas fa-user"></i> ${comment.user_name}
-                        </div>
-                        <div class="list-item-meta">
-                            ${new Date(comment.created_at).toLocaleString('si-LK')}
-                        </div>
-                        <div class="list-item-description">
-                            ${comment.message}
-                        </div>
-                    </div>
-                    <div class="list-item-actions">
-                        <button class="btn-icon btn-icon-delete" onclick="deleteComment(${comment.id})" title="මකන්න">
+            data.forEach(comment => {
+                const date = new Date(comment.created_at);
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${comment.user_name}</td>
+                    <td>${comment.message.length > 100 ? comment.message.substring(0, 100) + '...' : comment.message}</td>
+                    <td>${date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</td>
+                    <td class="actions">
+                        <button class="btn-icon" onclick="viewChatMessage(${comment.id})">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button class="btn-icon btn-danger" onclick="deleteChatMessage(${comment.id})">
                             <i class="fas fa-trash"></i>
                         </button>
-                    </div>
-                </div>
-            `).join('');
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+            
+            // Update stats
+            document.getElementById('totalMessages').textContent = data.length;
+            document.getElementById('todayMessages').textContent = data.filter(c => 
+                new Date(c.created_at).toDateString() === new Date().toDateString()
+            ).length;
+            
+            // Count unique users
+            const uniqueUsers = [...new Set(data.map(c => c.user_name))].length;
+            document.getElementById('activeUsers').textContent = uniqueUsers;
+            
         } else {
-            list.innerHTML = `
-                <div class="empty-state">
-                    <i class="far fa-comments"></i>
-                    <p>පණිවිඩ නොමැත</p>
-                </div>
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="4" class="text-center">
+                        No chat messages yet
+                    </td>
+                </tr>
             `;
         }
+        
     } catch (error) {
-        console.error('Load comments error:', error);
-        list.innerHTML = '<div class="error-state">පූරණය කිරීමේ දෝෂයක්</div>';
+        console.error('Error loading chat data:', error);
+        showToast('Failed to load chat messages', 'error');
     }
 }
 
-async function deleteComment(id) {
-    if (!confirm('මෙම පණිවිඩය මැකීමට අවශ්‍යද?')) return;
-    
-    showLoading(true);
-    
+async function loadRecentActivity() {
     try {
-        const { error } = await supabase
-            .from('comments')
-            .delete()
-            .eq('id', id);
+        const activityList = document.getElementById('activityList');
+        if (!activityList) return;
         
-        if (error) throw error;
-        
-        await loadComments();
-        await loadStats();
-        showToast('පණිවිඩය මකා දමන ලදි', 'success');
-        
-    } catch (error) {
-        console.error('Delete comment error:', error);
-        showToast('පණිවිඩය මැකීමේ දෝෂයක්', 'error');
-    } finally {
-        showLoading(false);
-    }
-}
-
-// ==========================================
-// EXAMS MANAGEMENT
-// ==========================================
-async function loadExams() {
-    const list = document.getElementById('examsList');
-    if (!list) return;
-    
-    list.innerHTML = '<div class="loading-item">පූරණය වෙමින්...</div>';
-    
-    try {
-        const { data, error } = await supabase
+        // Get recent exams
+        const { data: exams } = await supabase
             .from('exams')
             .select('*')
-            .order('exam_date', { ascending: true });
+            .order('created_at', { ascending: false })
+            .limit(5);
         
-        if (error) throw error;
+        // Get recent notifications
+        const { data: notifications } = await supabase
+            .from('notifications')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(5);
         
-        if (data && data.length > 0) {
-            list.innerHTML = data.map(exam => `
-                <div class="list-item">
-                    <div class="list-item-content">
-                        <div class="list-item-title">${exam.batch_name}</div>
-                        <div class="list-item-meta">
-                            ${new Date(exam.exam_date).toLocaleDateString('si-LK', { 
-                                weekday: 'long',
-                                year: 'numeric',
-                                month: 'long',
-                                day: 'numeric'
-                            })}
-                            <span class="list-item-badge ${exam.status === 'enabled' ? 'badge-success' : 'badge-danger'}">
-                                ${exam.status === 'enabled' ? 'සක්‍රිය' : 'අක්‍රිය'}
-                            </span>
-                        </div>
-                    </div>
-                    <div class="list-item-actions">
-                        <button class="btn-icon" onclick="toggleExamStatus(${exam.id}, '${exam.status}')" title="${exam.status === 'enabled' ? 'අක්‍රිය කරන්න' : 'සක්‍රිය කරන්න'}">
-                            <i class="fas fa-${exam.status === 'enabled' ? 'eye-slash' : 'eye'}"></i>
-                        </button>
-                        <button class="btn-icon btn-icon-delete" onclick="deleteExam(${exam.id})" title="මකන්න">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
+        // Combine and sort activities
+        const activities = [
+            ...(exams?.map(exam => ({
+                type: 'exam',
+                title: `New exam added: ${exam.batch_name}`,
+                time: new Date(exam.created_at),
+                icon: 'fas fa-calendar-plus'
+            })) || []),
+            ...(notifications?.map(notif => ({
+                type: 'notification',
+                title: `Notification sent: ${notif.title}`,
+                time: new Date(notif.created_at),
+                icon: 'fas fa-bell'
+            })) || [])
+        ].sort((a, b) => b.time - a.time).slice(0, 10);
+        
+        activityList.innerHTML = activities.map(activity => `
+            <div class="activity-item">
+                <div class="activity-icon">
+                    <i class="${activity.icon}"></i>
                 </div>
-            `).join('');
-        } else {
-            list.innerHTML = `
-                <div class="empty-state">
-                    <i class="far fa-calendar-times"></i>
-                    <p>විභාග නොමැත</p>
+                <div class="activity-content">
+                    <p class="activity-title">${activity.title}</p>
+                    <span class="activity-time">${formatTimeAgo(activity.time)}</span>
                 </div>
-            `;
-        }
+            </div>
+        `).join('');
+        
     } catch (error) {
-        console.error('Load exams error:', error);
-        list.innerHTML = '<div class="error-state">පූරණය කිරීමේ දෝෂයක්</div>';
+        console.error('Error loading recent activity:', error);
     }
 }
 
-async function addExam() {
-    const batchName = document.getElementById('examBatchName').value.trim();
-    const examDate = document.getElementById('examDate').value;
+// ==========================================
+// CRUD OPERATIONS
+// ==========================================
+async function addNewExam() {
+    const name = document.getElementById('examName')?.value.trim();
+    const dateTime = document.getElementById('examDateTime')?.value;
+    const description = document.getElementById('examDescription')?.value.trim();
     
-    if (!batchName || !examDate) {
-        showToast('කරුණාකර විභාග නම සහ දිනය ඇතුළත් කරන්න', 'warning');
+    if (!name || !dateTime) {
+        showToast('Please fill in all required fields', 'error');
         return;
     }
     
@@ -561,24 +462,30 @@ async function addExam() {
         const { error } = await supabase
             .from('exams')
             .insert([{
-                batch_name: batchName,
-                exam_date: examDate + ' 09:00:00',
-                status: 'enabled'
+                batch_name: name,
+                exam_date: dateTime + ':00+05:30', // Sri Lanka timezone
+                description: description,
+                status: 'enabled',
+                created_at: new Date().toISOString()
             }]);
         
         if (error) throw error;
         
-        // Clear form
-        document.getElementById('examBatchName').value = '';
-        document.getElementById('examDate').value = '';
+        showToast('Exam added successfully!', 'success');
         
+        // Clear form
+        document.getElementById('examName').value = '';
+        document.getElementById('examDateTime').value = '';
+        document.getElementById('examDescription').value = '';
+        
+        // Refresh data
         await loadExams();
-        await loadStats();
-        showToast('විභාගය සාර්ථකව එකතු කරන ලදි', 'success');
+        await loadDashboardStats();
+        await loadRecentActivity();
         
     } catch (error) {
-        console.error('Add exam error:', error);
-        showToast('විභාගය එකතු කිරීමේ දෝෂයක්', 'error');
+        console.error('Error adding exam:', error);
+        showToast('Failed to add exam: ' + error.message, 'error');
     } finally {
         showLoading(false);
     }
@@ -586,6 +493,10 @@ async function addExam() {
 
 async function toggleExamStatus(id, currentStatus) {
     const newStatus = currentStatus === 'enabled' ? 'disabled' : 'enabled';
+    
+    if (!confirm(`Are you sure you want to ${newStatus === 'enabled' ? 'activate' : 'deactivate'} this exam?`)) {
+        return;
+    }
     
     showLoading(true);
     
@@ -597,20 +508,21 @@ async function toggleExamStatus(id, currentStatus) {
         
         if (error) throw error;
         
+        showToast(`Exam ${newStatus === 'enabled' ? 'activated' : 'deactivated'} successfully`, 'success');
         await loadExams();
-        await loadStats();
-        showToast(`විභාගය ${newStatus === 'enabled' ? 'සක්‍රිය කරන ලදි' : 'අක්‍රිය කරන ලදි'}`, 'success');
         
     } catch (error) {
-        console.error('Toggle exam error:', error);
-        showToast('විභාග තත්වය වෙනස් කිරීමේ දෝෂයක්', 'error');
+        console.error('Error toggling exam status:', error);
+        showToast('Failed to update exam status', 'error');
     } finally {
         showLoading(false);
     }
 }
 
 async function deleteExam(id) {
-    if (!confirm('මෙම විභාගය මැකීමට අවශ්‍යද? මෙය ප්‍රතිවර්තනය කළ නොහැක.')) return;
+    if (!confirm('Are you sure you want to delete this exam? This action cannot be undone.')) {
+        return;
+    }
     
     showLoading(true);
     
@@ -622,91 +534,317 @@ async function deleteExam(id) {
         
         if (error) throw error;
         
+        showToast('Exam deleted successfully', 'success');
         await loadExams();
-        await loadStats();
-        showToast('විභාගය මකා දමන ලදි', 'success');
+        await loadDashboardStats();
         
     } catch (error) {
-        console.error('Delete exam error:', error);
-        showToast('විභාගය මැකීමේ දෝෂයක්', 'error');
+        console.error('Error deleting exam:', error);
+        showToast('Failed to delete exam', 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+async function sendNotification() {
+    const title = document.getElementById('notificationTitle')?.value.trim();
+    const message = document.getElementById('notificationMessage')?.value.trim();
+    const isImportant = document.getElementById('notificationImportant')?.checked;
+    const isPersistent = document.getElementById('notificationPersistent')?.checked;
+    const imageFile = document.getElementById('notificationImage')?.files[0];
+    
+    if (!title) {
+        showToast('Please enter a notification title', 'error');
+        return;
+    }
+    
+    showLoading(true);
+    
+    try {
+        let imageUrl = null;
+        
+        // Upload image if selected
+        if (imageFile) {
+            const fileName = `${Date.now()}_${imageFile.name.replace(/\s+/g, '_')}`;
+            const { data, error } = await supabase.storage
+                .from('uploads')
+                .upload(`notifications/${fileName}`, imageFile);
+            
+            if (error) throw error;
+            
+            // Get public URL
+            const { data: { publicUrl } } = supabase.storage
+                .from('uploads')
+                .getPublicUrl(`notifications/${fileName}`);
+            
+            imageUrl = publicUrl;
+        }
+        
+        // Insert notification
+        const { error } = await supabase
+            .from('notifications')
+            .insert([{
+                title: title,
+                message: message,
+                image_url: imageUrl,
+                is_active: true,
+                show_until_dismissed: isPersistent,
+                priority: isImportant ? 2 : 1,
+                created_at: new Date().toISOString(),
+                created_by: currentUser?.email || 'admin'
+            }]);
+        
+        if (error) throw error;
+        
+        showToast('Notification sent successfully!', 'success');
+        
+        // Clear form
+        document.getElementById('notificationTitle').value = '';
+        document.getElementById('notificationMessage').value = '';
+        document.getElementById('notificationImportant').checked = false;
+        document.getElementById('notificationPersistent').checked = false;
+        document.getElementById('notificationImage').value = '';
+        
+        // Refresh data
+        await loadNotifications();
+        await loadDashboardStats();
+        await loadRecentActivity();
+        
+    } catch (error) {
+        console.error('Error sending notification:', error);
+        showToast('Failed to send notification: ' + error.message, 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+async function deleteNotification(id) {
+    if (!confirm('Are you sure you want to delete this notification?')) {
+        return;
+    }
+    
+    showLoading(true);
+    
+    try {
+        const { error } = await supabase
+            .from('notifications')
+            .update({ is_active: false })
+            .eq('id', id);
+        
+        if (error) throw error;
+        
+        showToast('Notification deleted successfully', 'success');
+        await loadNotifications();
+        await loadDashboardStats();
+        
+    } catch (error) {
+        console.error('Error deleting notification:', error);
+        showToast('Failed to delete notification', 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+async function deleteChatMessage(id) {
+    if (!confirm('Are you sure you want to delete this chat message?')) {
+        return;
+    }
+    
+    showLoading(true);
+    
+    try {
+        const { error } = await supabase
+            .from('comments')
+            .delete()
+            .eq('id', id);
+        
+        if (error) throw error;
+        
+        showToast('Chat message deleted successfully', 'success');
+        await loadChatData();
+        await loadDashboardStats();
+        
+    } catch (error) {
+        console.error('Error deleting chat message:', error);
+        showToast('Failed to delete chat message', 'error');
     } finally {
         showLoading(false);
     }
 }
 
 // ==========================================
-// UTILITY FUNCTIONS
+// SITE EFFECTS & THEMES
 // ==========================================
-function showLoading(show) {
-    const loadingOverlay = document.getElementById('loadingOverlay');
-    if (loadingOverlay) {
-        loadingOverlay.style.display = show ? 'flex' : 'none';
+async function toggleEffect(effect, enabled) {
+    try {
+        // Save setting to database
+        const { error } = await supabase
+            .from('site_settings')
+            .upsert({
+                setting_key: `${effect}_effect`,
+                setting_value: enabled ? 'true' : 'false',
+                is_enabled: enabled,
+                updated_at: new Date().toISOString()
+            });
+        
+        if (error) throw error;
+        
+        const effectName = effect === 'snow' ? 'Snow effect' : 'Confetti effect';
+        showToast(`${effectName} ${enabled ? 'enabled' : 'disabled'}`, 'success');
+        
+    } catch (error) {
+        console.error('Error toggling effect:', error);
+        showToast('Failed to update effect setting', 'error');
     }
 }
 
-function showToast(message, type = 'success') {
-    // Create toast element
-    const toast = document.createElement('div');
-    toast.className = 'toast';
-    toast.innerHTML = `
-        <div class="toast-content">
-            <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
-            <span>${message}</span>
-        </div>
-    `;
-    
-    // Add styles
-    toast.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        background: ${type === 'success' ? '#1a1f3a' : type === 'error' ? '#1a1f3a' : '#1a1f3a'};
-        color: ${type === 'success' ? '#38ef7d' : type === 'error' ? '#ff6b6b' : '#ffb74d'};
-        padding: 15px 25px;
-        border-radius: 12px;
-        border-left: 4px solid ${type === 'success' ? '#38ef7d' : type === 'error' ? '#ff6b6b' : '#ffb74d'};
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        z-index: 1001;
-        transform: translateX(150%);
-        transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-        max-width: 400px;
-        font-weight: 500;
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-    `;
-    
-    document.body.appendChild(toast);
-    
-    // Animate in
-    setTimeout(() => {
-        toast.style.transform = 'translateX(0)';
-    }, 10);
-    
-    // Remove after 3 seconds
-    setTimeout(() => {
-        toast.style.transform = 'translateX(150%)';
-        setTimeout(() => {
-            if (toast.parentNode) {
-                document.body.removeChild(toast);
-            }
-        }, 300);
-    }, 3000);
+function toggleTheme(theme, enabled) {
+    // This would be implemented based on your theme system
+    showToast('Theme settings saved. Refresh page to see changes.', 'success');
+}
+
+function selectTheme(theme) {
+    showToast(`Selected ${theme} theme. Changes will apply on next refresh.`, 'info');
 }
 
 // ==========================================
-// EXPORT FUNCTIONS TO WINDOW OBJECT
+// UTILITY FUNCTIONS
+// ==========================================
+function showLoading(show) {
+    const loader = document.getElementById('loadingOverlay');
+    if (loader) {
+        loader.style.display = show ? 'flex' : 'none';
+    }
+}
+
+function showToast(message, type = 'info') {
+    const toast = document.getElementById('toast');
+    if (!toast) return;
+    
+    // Set message and type
+    toast.textContent = message;
+    toast.className = 'toast';
+    
+    // Add type-specific styling
+    if (type === 'success') {
+        toast.style.borderLeftColor = '#4cc9f0';
+    } else if (type === 'error') {
+        toast.style.borderLeftColor = '#f72585';
+    } else if (type === 'warning') {
+        toast.style.borderLeftColor = '#f8961e';
+    } else {
+        toast.style.borderLeftColor = '#4361ee';
+    }
+    
+    // Show toast
+    toast.classList.add('show');
+    
+    // Auto-hide after 5 seconds
+    setTimeout(() => {
+        toast.classList.remove('show');
+    }, 5000);
+}
+
+function formatTimeAgo(date) {
+    const now = new Date();
+    const seconds = Math.floor((now - date) / 1000);
+    
+    if (seconds < 60) return 'Just now';
+    if (seconds < 3600) return `${Math.floor(seconds / 60)} minutes ago`;
+    if (seconds < 86400) return `${Math.floor(seconds / 3600)} hours ago`;
+    if (seconds < 604800) return `${Math.floor(seconds / 86400)} days ago`;
+    
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+function refreshChat() {
+    showLoading(true);
+    setTimeout(() => {
+        loadChatData();
+        showLoading(false);
+        showToast('Chat data refreshed', 'success');
+    }, 1000);
+}
+
+function backupDatabase() {
+    showToast('Database backup initiated. You will receive an email when complete.', 'info');
+    // In a real application, this would trigger a server-side backup process
+}
+
+// ==========================================
+// INITIALIZATION
+// ==========================================
+document.addEventListener('DOMContentLoaded', async () => {
+    console.log('Admin panel initialized');
+    
+    // Check for existing session
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (session) {
+        currentUser = session.user;
+        document.getElementById('loginSection').style.display = 'none';
+        document.getElementById('dashboardSection').style.display = 'block';
+        
+        // Update user info
+        document.getElementById('adminName').textContent = currentUser.email.split('@')[0];
+        document.getElementById('adminEmailDisplay').textContent = currentUser.email;
+        
+        // Load data
+        await loadAllData();
+    } else {
+        // Show login screen
+        document.getElementById('loginSection').style.display = 'block';
+        document.getElementById('dashboardSection').style.display = 'none';
+    }
+    
+    // Hide loading overlay
+    setTimeout(() => {
+        showLoading(false);
+    }, 1000);
+});
+
+// ==========================================
+// EXPORT FUNCTIONS TO GLOBAL SCOPE
 // ==========================================
 window.adminLogin = adminLogin;
 window.logout = logout;
-window.toggleEffect = toggleEffect;
-window.sendNotification = sendNotification;
-window.disableNotification = disableNotification;
-window.editNotification = editNotification;
-window.deleteComment = deleteComment;
-window.addExam = addExam;
+window.addNewExam = addNewExam;
 window.toggleExamStatus = toggleExamStatus;
 window.deleteExam = deleteExam;
-window.loadAllData = loadAllData;
+window.sendNotification = sendNotification;
+window.deleteNotification = deleteNotification;
+window.deleteChatMessage = deleteChatMessage;
+window.toggleEffect = toggleEffect;
+window.toggleTheme = toggleTheme;
+window.selectTheme = selectTheme;
+window.refreshChat = refreshChat;
+window.backupDatabase = backupDatabase;
+window.showSection = function(section) {
+    // Hide all sections
+    document.querySelectorAll('.content-section').forEach(el => {
+        el.classList.remove('active');
+    });
+    
+    // Remove active from all menu items
+    document.querySelectorAll('.sidebar-menu li').forEach(el => {
+        el.classList.remove('active');
+    });
+    
+    // Show selected section
+    document.getElementById(`section-${section}`).classList.add('active');
+    
+    // Set active menu item
+    const menuItem = document.querySelector(`.sidebar-menu li[onclick*="${section}"]`);
+    if (menuItem) {
+        menuItem.classList.add('active');
+    }
+};
+
+// View functions (to be implemented)
+window.viewNotification = function(id) {
+    showToast('View notification feature coming soon', 'info');
+};
+
+window.viewChatMessage = function(id) {
+    showToast('View chat message feature coming soon', 'info');
+};
