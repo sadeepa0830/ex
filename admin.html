@@ -1,352 +1,620 @@
 <!DOCTYPE html>
-<html lang="si">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Panel - Exam Master SL</title>
+    <title>Exam Master SL - Admin Dashboard</title>
     
     <!-- Google Fonts & Icons -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <!-- CSS -->
     <link rel="stylesheet" href="admin.css">
+    
+    <!-- PWA -->
+    <link rel="manifest" href="manifest.json">
 </head>
 <body>
     <!-- Loading Overlay -->
     <div class="loading-overlay" id="loadingOverlay">
-        <div class="spinner"></div>
-        <div class="loading-text">පූරණය වෙමින්...</div>
+        <div class="spinner-container">
+            <div class="spinner"></div>
+            <p class="loading-text">Loading Admin Panel...</p>
+        </div>
     </div>
 
+    <!-- Main Container -->
     <div class="admin-container">
-        <!-- LOGIN SECTION -->
-        <div id="loginSection">
-            <div class="login-wrapper">
-                <div class="login-card">
-                    <div class="login-header">
-                        <div class="login-logo">ADMIN PANEL</div>
-                        <div class="login-subtitle">Exam Master SL - පරිපාලක කොටස</div>
+        <!-- Login Section -->
+        <div id="loginSection" class="login-section">
+            <div class="login-card">
+                <div class="login-header">
+                    <div class="logo">
+                        <i class="fas fa-graduation-cap"></i>
+                        <h1>Exam Master</h1>
+                    </div>
+                    <p class="subtitle">Administrator Control Panel</p>
+                </div>
+                
+                <div class="login-body">
+                    <div class="form-group">
+                        <label for="adminEmail">
+                            <i class="fas fa-envelope"></i> Email Address
+                        </label>
+                        <input type="email" id="adminEmail" placeholder="admin@exammaster.lk">
                     </div>
                     
                     <div class="form-group">
-                        <label class="form-label" for="adminEmail">
-                            <i class="fas fa-envelope"></i> ඊමේල් ලිපිනය
+                        <label for="adminPassword">
+                            <i class="fas fa-lock"></i> Password
                         </label>
-                        <div class="input-with-icon">
-                            <i class="input-icon fas fa-user"></i>
-                            <input type="email" id="adminEmail" class="form-input" placeholder="admin@example.com">
-                        </div>
+                        <input type="password" id="adminPassword" placeholder="••••••••">
                     </div>
                     
-                    <div class="form-group">
-                        <label class="form-label" for="adminPassword">
-                            <i class="fas fa-lock"></i> මුරපදය
-                        </label>
-                        <div class="input-with-icon">
-                            <i class="input-icon fas fa-key"></i>
-                            <input type="password" id="adminPassword" class="form-input" placeholder="********">
-                        </div>
-                    </div>
-                    
-                    <button class="login-btn" onclick="window.adminLogin()">
-                        <i class="fas fa-sign-in-alt"></i> ඇතුල් වන්න
+                    <button class="btn-login" onclick="adminLogin()">
+                        <i class="fas fa-sign-in-alt"></i> Sign In
                     </button>
+                    
+                    <div class="login-footer">
+                        <p><i class="fas fa-info-circle"></i> Use admin credentials provided by system administrator</p>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- DASHBOARD SECTION -->
-        <div id="dashboardSection">
-            <!-- Dashboard Header -->
-            <div class="dashboard-header">
-                <div class="header-content">
-                    <h1>Admin Dashboard</h1>
-                    <div class="admin-info">
-                        <i class="fas fa-user-circle"></i>
-                        <span>පරිශීලක: <span id="adminName">Admin</span></span>
-                        <span>•</span>
-                        <span id="adminEmailDisplay">admin@example.com</span>
+        <!-- Dashboard Section -->
+        <div id="dashboardSection" class="dashboard-section" style="display: none;">
+            <!-- Top Navigation -->
+            <nav class="admin-nav">
+                <div class="nav-left">
+                    <div class="nav-logo">
+                        <i class="fas fa-graduation-cap"></i>
+                        <span>Exam Master Admin</span>
                     </div>
                 </div>
                 
-                <div class="time-display">
-                    <div id="adminDate" class="date">-- --- ----</div>
-                    <div id="adminTime" class="time">--:--:--</div>
+                <div class="nav-center">
+                    <div class="time-display">
+                        <div id="currentDate" class="date">-- --- ----</div>
+                        <div id="currentTime" class="time">--:--:--</div>
+                    </div>
                 </div>
                 
-                <button class="logout-btn" onclick="window.logout()">
-                    <i class="fas fa-sign-out-alt"></i> පිටවීම
-                </button>
-            </div>
-
-            <!-- Statistics Section -->
-            <section class="stats-section">
-                <h2 class="section-title"><i class="fas fa-chart-bar"></i> සංඛ්‍යාලේඛන</h2>
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-icon">
-                            <i class="fas fa-calendar-alt"></i>
+                <div class="nav-right">
+                    <div class="user-profile">
+                        <div class="user-info">
+                            <span id="adminName">Administrator</span>
+                            <small id="adminEmailDisplay">admin@exammaster.lk</small>
                         </div>
-                        <div class="stat-value" id="statExams">0</div>
-                        <div class="stat-label">සක්‍රිය විභාග</div>
-                    </div>
-                    
-                    <div class="stat-card">
-                        <div class="stat-icon">
-                            <i class="fas fa-bell"></i>
-                        </div>
-                        <div class="stat-value" id="statNotifications">0</div>
-                        <div class="stat-label">සක්‍රිය නිවේදන</div>
-                    </div>
-                    
-                    <div class="stat-card">
-                        <div class="stat-icon">
-                            <i class="fas fa-comments"></i>
-                        </div>
-                        <div class="stat-value" id="statComments">0</div>
-                        <div class="stat-label">මුළු පණිවිඩ</div>
-                    </div>
-                    
-                    <div class="stat-card">
-                        <div class="stat-icon">
-                            <i class="fas fa-users"></i>
-                        </div>
-                        <div class="stat-value" id="statUsers">0</div>
-                        <div class="stat-label">සක්‍රිය පරිශීලකයින්</div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Admin Grid -->
-            <div class="admin-grid">
-                <!-- 1. Send Notification -->
-                <div class="admin-card">
-                    <div class="card-header">
-                        <div class="card-icon">
-                            <i class="fas fa-bullhorn"></i>
-                        </div>
-                        <div class="card-title">
-                            <h3>නිවේදනයක් යවන්න</h3>
-                            <p>සියලුම පරිශීලකයින්ට නව නිවේදනයක් යවන්න</p>
+                        <div class="user-avatar">
+                            <i class="fas fa-user-shield"></i>
                         </div>
                     </div>
-                    
-                    <input type="text" id="notifTitle" class="admin-input" placeholder="නිවේදන මාතෘකාව">
-                    <textarea id="notifMessage" class="admin-textarea" placeholder="නිවේදන පණිවිඩය"></textarea>
-                    
-                    <div class="file-upload-wrapper">
-                        <label class="file-upload-label">
-                            <i class="fas fa-cloud-upload-alt"></i> රූපය හෝ PDF ගොනුව උඩුගත කරන්න
-                            <input type="file" id="uploadFile" class="file-upload-input" accept="image/*,.pdf">
-                        </label>
-                    </div>
-                    
-                    <div class="checkbox-wrapper">
-                        <input type="checkbox" id="notifPersistent">
-                        <span class="custom-checkbox"></span>
-                        <label for="notifPersistent">ස්ථිර නිවේදනයක් ලෙස පෙන්වන්න</label>
-                    </div>
-                    
-                    <button class="admin-btn" onclick="window.sendNotification()" id="sendBtn">
-                        <i class="fas fa-paper-plane"></i> නිවේදනය යවන්න
+                    <button class="btn-logout" onclick="logout()">
+                        <i class="fas fa-sign-out-alt"></i> Logout
                     </button>
                 </div>
+            </nav>
 
-                <!-- 2. Site Effects -->
-                <div class="admin-card">
-                    <div class="card-header">
-                        <div class="card-icon">
-                            <i class="fas fa-magic"></i>
-                        </div>
-                        <div class="card-title">
-                            <h3>අඩවි බලපෑම්</h3>
-                            <p>හිම සහ කොන්ෆෙටි බලපෑම් කළමනාකරණය</p>
-                        </div>
+            <!-- Main Dashboard Content -->
+            <div class="dashboard-content">
+                <!-- Sidebar -->
+                <aside class="sidebar">
+                    <div class="sidebar-header">
+                        <h3><i class="fas fa-tachometer-alt"></i> Dashboard</h3>
                     </div>
                     
-                    <div class="toggle-switch">
-                        <label>
-                            <input type="checkbox" id="snowToggle" onchange="window.toggleEffect('snow_effect', this.checked)">
-                            <span class="slider"></span>
-                        </label>
-                        <div>
-                            <label for="snowToggle">හිම බලපෑම</label>
-                            <small>නත්තල් සහ අවුරුදු කාලය සඳහා</small>
-                        </div>
-                    </div>
+                    <ul class="sidebar-menu">
+                        <li class="active" onclick="showSection('dashboard')">
+                            <i class="fas fa-home"></i> Dashboard
+                        </li>
+                        <li onclick="showSection('exams')">
+                            <i class="fas fa-calendar-alt"></i> Exams
+                        </li>
+                        <li onclick="showSection('notifications')">
+                            <i class="fas fa-bell"></i> Notifications
+                        </li>
+                        <li onclick="showSection('chat')">
+                            <i class="fas fa-comments"></i> Chat Management
+                        </li>
+                        <li onclick="showSection('effects')">
+                            <i class="fas fa-magic"></i> Site Effects
+                        </li>
+                        <li onclick="showSection('settings')">
+                            <i class="fas fa-cog"></i> Settings
+                        </li>
+                        <li onclick="showSection('analytics')">
+                            <i class="fas fa-chart-line"></i> Analytics
+                        </li>
+                    </ul>
                     
-                    <div class="toggle-switch">
-                        <label>
-                            <input type="checkbox" id="confettiToggle" onchange="window.toggleEffect('confetti_effect', this.checked)">
-                            <span class="slider"></span>
-                        </label>
-                        <div>
-                            <label for="confettiToggle">කොන්ෆෙටි බලපෑම</label>
-                            <small>සමරු අවස්ථා සඳහා</small>
+                    <div class="sidebar-footer">
+                        <div class="system-status">
+                            <div class="status-indicator active"></div>
+                            <span>System Online</span>
+                        </div>
+                        <div class="database-status">
+                            <div class="status-indicator" id="dbStatus"></div>
+                            <span>Database</span>
                         </div>
                     </div>
-                    
-                    <div class="toggle-switch">
-                        <label>
-                            <input type="checkbox" id="autoNotifToggle">
-                            <span class="slider"></span>
-                        </label>
-                        <div>
-                            <label for="autoNotifToggle">ස්වයං නිවේදන</label>
-                            <small>නව පරිශීලකයින්ට ස්වයංක්‍රීයව පෙන්වන්න</small>
-                        </div>
-                    </div>
-                </div>
+                </aside>
 
-                <!-- 3. Manage Notifications -->
-                <div class="admin-card">
-                    <div class="card-header">
-                        <div class="card-icon">
-                            <i class="fas fa-list"></i>
+                <!-- Main Content -->
+                <main class="main-content">
+                    <!-- Dashboard Section -->
+                    <section id="section-dashboard" class="content-section active">
+                        <div class="section-header">
+                            <h2><i class="fas fa-tachometer-alt"></i> Dashboard Overview</h2>
+                            <p>Real-time system statistics and activity</p>
                         </div>
-                        <div class="card-title">
-                            <h3>සක්‍රිය නිවේදන</h3>
-                            <p>දැනට සක්‍රියව ඇති නිවේදන කළමනාකරණය</p>
+                        
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-icon bg-primary">
+                                    <i class="fas fa-calendar-alt"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <h3 id="statExams">0</h3>
+                                    <p>Active Exams</p>
+                                </div>
+                            </div>
+                            
+                            <div class="stat-card">
+                                <div class="stat-icon bg-success">
+                                    <i class="fas fa-bell"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <h3 id="statNotifications">0</h3>
+                                    <p>Notifications</p>
+                                </div>
+                            </div>
+                            
+                            <div class="stat-card">
+                                <div class="stat-icon bg-warning">
+                                    <i class="fas fa-comments"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <h3 id="statComments">0</h3>
+                                    <p>Chat Messages</p>
+                                </div>
+                            </div>
+                            
+                            <div class="stat-card">
+                                <div class="stat-icon bg-info">
+                                    <i class="fas fa-users"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <h3 id="statUsers">0</h3>
+                                    <p>Active Users</p>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                    
-                    <div class="list-container" id="activeNotifsList">
-                        <!-- Loaded dynamically -->
-                        <div class="loading-item">පූරණය වෙමින්...</div>
-                    </div>
-                    
-                    <button class="admin-btn" onclick="window.loadAllData()">
-                        <i class="fas fa-sync-alt"></i> නැවත පූරණය කරන්න
-                    </button>
-                </div>
+                        
+                        <div class="recent-activity">
+                            <h3><i class="fas fa-history"></i> Recent Activity</h3>
+                            <div class="activity-list" id="activityList">
+                                <!-- Activity items will be loaded here -->
+                            </div>
+                        </div>
+                    </section>
 
-                <!-- 4. Manage Comments -->
-                <div class="admin-card">
-                    <div class="card-header">
-                        <div class="card-icon">
-                            <i class="fas fa-comments"></i>
+                    <!-- Exams Management Section -->
+                    <section id="section-exams" class="content-section">
+                        <div class="section-header">
+                            <h2><i class="fas fa-calendar-alt"></i> Exams Management</h2>
+                            <p>Add, edit, and manage upcoming exams</p>
                         </div>
-                        <div class="card-title">
-                            <h3>පණිවිඩ කළමනාකරණය</h3>
-                            <p>පරිශීලක පණිවිඩ බලන්න සහ කළමනාකරණය කරන්න</p>
+                        
+                        <div class="form-card">
+                            <h3><i class="fas fa-plus-circle"></i> Add New Exam</h3>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Exam Name</label>
+                                    <input type="text" id="examName" placeholder="e.g., 2024 A/L Science Paper I">
+                                </div>
+                                <div class="form-group">
+                                    <label>Exam Date & Time</label>
+                                    <input type="datetime-local" id="examDateTime">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Description</label>
+                                <textarea id="examDescription" placeholder="Add exam details..."></textarea>
+                            </div>
+                            <button class="btn-primary" onclick="addNewExam()">
+                                <i class="fas fa-save"></i> Save Exam
+                            </button>
                         </div>
-                    </div>
-                    
-                    <div class="list-container" id="commentsList">
-                        <!-- Loaded dynamically -->
-                        <div class="loading-item">පූරණය වෙමින්...</div>
-                    </div>
-                    
-                    <button class="admin-btn" onclick="window.loadAllData()">
-                        <i class="fas fa-sync-alt"></i> නැවත පූරණය කරන්න
-                    </button>
-                </div>
+                        
+                        <div class="table-card">
+                            <h3><i class="fas fa-list"></i> Upcoming Exams</h3>
+                            <div class="table-responsive">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Exam Name</th>
+                                            <th>Date</th>
+                                            <th>Days Left</th>
+                                            <th>Status</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="examsTable">
+                                        <!-- Exams will be loaded here -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </section>
 
-                <!-- 5. Manage Exams -->
-                <div class="admin-card">
-                    <div class="card-header">
-                        <div class="card-icon">
-                            <i class="fas fa-calendar-plus"></i>
+                    <!-- Notifications Section -->
+                    <section id="section-notifications" class="content-section">
+                        <div class="section-header">
+                            <h2><i class="fas fa-bell"></i> Notifications Management</h2>
+                            <p>Send and manage site-wide notifications</p>
                         </div>
-                        <div class="card-title">
-                            <h3>විභාග කළමනාකරණය</h3>
-                            <p>නව විභාග එකතු කරන්න සහ කළමනාකරණය කරන්න</p>
+                        
+                        <div class="form-card">
+                            <h3><i class="fas fa-bullhorn"></i> Send Notification</h3>
+                            <div class="form-group">
+                                <label>Title</label>
+                                <input type="text" id="notificationTitle" placeholder="Notification title">
+                            </div>
+                            <div class="form-group">
+                                <label>Message</label>
+                                <textarea id="notificationMessage" placeholder="Enter your message..." rows="4"></textarea>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Upload Image (Optional)</label>
+                                    <div class="file-upload">
+                                        <input type="file" id="notificationImage" accept="image/*">
+                                        <label for="notificationImage">
+                                            <i class="fas fa-cloud-upload-alt"></i> Choose Image
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="notificationImportant">
+                                        <span class="checkmark"></span>
+                                        Mark as Important
+                                    </label>
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="notificationPersistent">
+                                        <span class="checkmark"></span>
+                                        Show until dismissed
+                                    </label>
+                                </div>
+                            </div>
+                            <button class="btn-primary" onclick="sendNotification()">
+                                <i class="fas fa-paper-plane"></i> Send Notification
+                            </button>
                         </div>
-                    </div>
-                    
-                    <div class="form-row">
-                        <input type="text" id="examBatchName" class="admin-input" placeholder="විභාග නම (උදා: 2026 A/L Science)">
-                        <input type="date" id="examDate" class="admin-input" placeholder="විභාග දිනය">
-                    </div>
-                    
-                    <button class="admin-btn btn-success" onclick="window.addExam()">
-                        <i class="fas fa-plus"></i> විභාගය එකතු කරන්න
-                    </button>
-                    
-                    <div class="list-container" id="examsList">
-                        <!-- Loaded dynamically -->
-                        <div class="loading-item">පූරණය වෙමින්...</div>
-                    </div>
-                </div>
+                        
+                        <div class="table-card">
+                            <h3><i class="fas fa-list"></i> Active Notifications</h3>
+                            <div id="notificationsList">
+                                <!-- Notifications will be loaded here -->
+                            </div>
+                        </div>
+                    </section>
 
-                <!-- 6. System Settings -->
-                <div class="admin-card">
-                    <div class="card-header">
-                        <div class="card-icon">
-                            <i class="fas fa-cog"></i>
+                    <!-- Chat Management Section -->
+                    <section id="section-chat" class="content-section">
+                        <div class="section-header">
+                            <h2><i class="fas fa-comments"></i> Chat Management</h2>
+                            <p>Monitor and manage user conversations</p>
                         </div>
-                        <div class="card-title">
-                            <h3>පද්ධති සැකසුම්</h3>
-                            <p>අඩවියේ සාමාන්‍ය සැකසුම්</p>
+                        
+                        <div class="table-card">
+                            <div class="table-header">
+                                <h3><i class="fas fa-comment-dots"></i> Recent Messages</h3>
+                                <button class="btn-secondary" onclick="refreshChat()">
+                                    <i class="fas fa-sync-alt"></i> Refresh
+                                </button>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>User</th>
+                                            <th>Message</th>
+                                            <th>Time</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="chatTable">
+                                        <!-- Chat messages will be loaded here -->
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
-                    </div>
-                    
-                    <div class="toggle-switch">
-                        <label>
-                            <input type="checkbox" id="maintenanceToggle">
-                            <span class="slider"></span>
-                        </label>
-                        <div>
-                            <label for="maintenanceToggle">රක්ෂණ මාදිලිය</label>
-                            <small>අඩවිය සියලුම පරිශීලකයින්ට අක්‍රිය කරන්න</small>
+                        
+                        <div class="stats-card">
+                            <h3><i class="fas fa-chart-bar"></i> Chat Statistics</h3>
+                            <div class="stats-row">
+                                <div class="stat-item">
+                                    <span class="stat-number" id="totalMessages">0</span>
+                                    <span class="stat-label">Total Messages</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-number" id="activeUsers">0</span>
+                                    <span class="stat-label">Active Users</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-number" id="todayMessages">0</span>
+                                    <span class="stat-label">Today's Messages</span>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                    
-                    <div class="toggle-switch">
-                        <label>
-                            <input type="checkbox" id="chatToggle" checked>
-                            <span class="slider"></span>
-                        </label>
-                        <div>
-                            <label for="chatToggle">චැට් පද්ධතිය</label>
-                            <small>පරිශීලක චැට් ක්‍රියාත්මක/අක්‍රිය කරන්න</small>
+                    </section>
+
+                    <!-- Site Effects Section -->
+                    <section id="section-effects" class="content-section">
+                        <div class="section-header">
+                            <h2><i class="fas fa-magic"></i> Site Effects & Themes</h2>
+                            <p>Customize visual effects and themes</p>
                         </div>
-                    </div>
-                    
-                    <div class="toggle-switch">
-                        <label>
-                            <input type="checkbox" id="notificationsToggle" checked>
-                            <span class="slider"></span>
-                        </label>
-                        <div>
-                            <label for="notificationsToggle">නිවේදන පද්ධතිය</label>
-                            <small>සියලුම නිවේදන ක්‍රියාත්මක/අක්‍රිය කරන්න</small>
+                        
+                        <div class="effects-grid">
+                            <div class="effect-card">
+                                <div class="effect-icon">
+                                    <i class="fas fa-snowflake"></i>
+                                </div>
+                                <div class="effect-content">
+                                    <h3>Snow Effect</h3>
+                                    <p>Enable snowfall animation for seasonal events</p>
+                                    <div class="toggle-switch">
+                                        <input type="checkbox" id="snowEffect" onchange="toggleEffect('snow', this.checked)">
+                                        <span class="slider"></span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="effect-card">
+                                <div class="effect-icon">
+                                    <i class="fas fa-fireworks"></i>
+                                </div>
+                                <div class="effect-content">
+                                    <h3>Confetti Effect</h3>
+                                    <p>Celebratory confetti animation</p>
+                                    <div class="toggle-switch">
+                                        <input type="checkbox" id="confettiEffect" onchange="toggleEffect('confetti', this.checked)">
+                                        <span class="slider"></span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="effect-card">
+                                <div class="effect-icon">
+                                    <i class="fas fa-palette"></i>
+                                </div>
+                                <div class="effect-content">
+                                    <h3>Dark Theme</h3>
+                                    <p>Enable dark mode for all users</p>
+                                    <div class="toggle-switch">
+                                        <input type="checkbox" id="darkTheme" onchange="toggleTheme('dark', this.checked)">
+                                        <span class="slider"></span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                    
-                    <button class="admin-btn btn-danger" onclick="clearAllData()">
-                        <i class="fas fa-trash-alt"></i> සියලු දත්ත හිස් කරන්න
-                    </button>
-                </div>
+                        
+                        <div class="theme-preview">
+                            <h3><i class="fas fa-eye"></i> Theme Preview</h3>
+                            <div class="preview-grid">
+                                <div class="preview-card" onclick="selectTheme('default')">
+                                    <div class="preview-header" style="background: #667eea;">
+                                        <h4>Default Theme</h4>
+                                    </div>
+                                    <div class="preview-body">
+                                        <p>Blue & Purple gradient</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="preview-card" onclick="selectTheme('dark')">
+                                    <div class="preview-header" style="background: #1a1f3a;">
+                                        <h4>Dark Theme</h4>
+                                    </div>
+                                    <div class="preview-body">
+                                        <p>Dark blue background</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="preview-card" onclick="selectTheme('light')">
+                                    <div class="preview-header" style="background: #f8f9fa; color: #333;">
+                                        <h4>Light Theme</h4>
+                                    </div>
+                                    <div class="preview-body">
+                                        <p>Clean light mode</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Settings Section -->
+                    <section id="section-settings" class="content-section">
+                        <div class="section-header">
+                            <h2><i class="fas fa-cog"></i> System Settings</h2>
+                            <p>Configure system preferences and security</p>
+                        </div>
+                        
+                        <div class="settings-grid">
+                            <div class="setting-card">
+                                <h3><i class="fas fa-user-shield"></i> Security Settings</h3>
+                                <div class="setting-item">
+                                    <label>Session Timeout (minutes)</label>
+                                    <input type="number" id="sessionTimeout" value="30" min="5" max="120">
+                                </div>
+                                <div class="setting-item">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="twoFactorAuth">
+                                        <span class="checkmark"></span>
+                                        Enable Two-Factor Authentication
+                                    </label>
+                                </div>
+                                <button class="btn-primary">
+                                    <i class="fas fa-save"></i> Save Security Settings
+                                </button>
+                            </div>
+                            
+                            <div class="setting-card">
+                                <h3><i class="fas fa-database"></i> Database Settings</h3>
+                                <div class="setting-item">
+                                    <label>Backup Frequency</label>
+                                    <select id="backupFrequency">
+                                        <option value="daily">Daily</option>
+                                        <option value="weekly">Weekly</option>
+                                        <option value="monthly">Monthly</option>
+                                    </select>
+                                </div>
+                                <div class="setting-item">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="autoBackup" checked>
+                                        <span class="checkmark"></span>
+                                        Automatic Backups
+                                    </label>
+                                </div>
+                                <button class="btn-secondary" onclick="backupDatabase()">
+                                    <i class="fas fa-download"></i> Backup Now
+                                </button>
+                            </div>
+                            
+                            <div class="setting-card">
+                                <h3><i class="fas fa-bell"></i> Notification Settings</h3>
+                                <div class="setting-item">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="emailNotifications" checked>
+                                        <span class="checkmark"></span>
+                                        Email Notifications
+                                    </label>
+                                </div>
+                                <div class="setting-item">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="pushNotifications" checked>
+                                        <span class="checkmark"></span>
+                                        Push Notifications
+                                    </label>
+                                </div>
+                                <div class="setting-item">
+                                    <label>Notification Sound</label>
+                                    <select id="notificationSound">
+                                        <option value="default">Default</option>
+                                        <option value="chime">Chime</option>
+                                        <option value="bell">Bell</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Analytics Section -->
+                    <section id="section-analytics" class="content-section">
+                        <div class="section-header">
+                            <h2><i class="fas fa-chart-line"></i> Analytics & Reports</h2>
+                            <p>View system performance and user statistics</p>
+                        </div>
+                        
+                        <div class="analytics-grid">
+                            <div class="chart-card">
+                                <h3><i class="fas fa-chart-bar"></i> User Activity</h3>
+                                <div class="chart-container">
+                                    <canvas id="userActivityChart"></canvas>
+                                </div>
+                            </div>
+                            
+                            <div class="chart-card">
+                                <h3><i class="fas fa-chart-pie"></i> Exam Categories</h3>
+                                <div class="chart-container">
+                                    <canvas id="examCategoriesChart"></canvas>
+                                </div>
+                            </div>
+                            
+                            <div class="stats-card">
+                                <h3><i class="fas fa-chart-area"></i> System Performance</h3>
+                                <div class="performance-metrics">
+                                    <div class="metric">
+                                        <span class="metric-label">Response Time</span>
+                                        <span class="metric-value" id="responseTime">120ms</span>
+                                    </div>
+                                    <div class="metric">
+                                        <span class="metric-label">Uptime</span>
+                                        <span class="metric-value" id="uptime">99.8%</span>
+                                    </div>
+                                    <div class="metric">
+                                        <span class="metric-label">Active Sessions</span>
+                                        <span class="metric-value" id="activeSessions">42</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </main>
             </div>
         </div>
     </div>
 
+    <!-- Toast Notification -->
+    <div id="toast" class="toast"></div>
+
+    <!-- JavaScript -->
     <script type="module" src="admin.js"></script>
     
+    <!-- Initialize Time -->
     <script>
-        // Clear all data function
-        function clearAllData() {
-            if (confirm('⚠️ අවවාදයයි! මෙම ක්‍රියාව ප්‍රතිවර්තනය කළ නොහැක.\n\nසියලුම දත්ත මැකීමට අවශ්‍යද?')) {
-                showLoading(true);
-                
-                // Simulate clearing data
-                setTimeout(() => {
-                    showToast('සියලුම දත්ත සාර්ථකව හිස් කරන ලදි', 'success');
-                    setTimeout(() => {
-                        location.reload();
-                    }, 2000);
-                }, 2000);
-            }
+        // Update time every second
+        function updateTime() {
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('en-US', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            });
+            const timeStr = now.toLocaleTimeString('en-US', { 
+                hour: '2-digit', 
+                minute: '2-digit', 
+                second: '2-digit' 
+            });
+            
+            const dateEl = document.getElementById('currentDate');
+            const timeEl = document.getElementById('currentTime');
+            
+            if (dateEl) dateEl.textContent = dateStr;
+            if (timeEl) timeEl.textContent = timeStr;
         }
         
-        // Auto-refresh data every 30 seconds
-        setInterval(() => {
-            if (window.loadAllData && document.getElementById('dashboardSection').style.display !== 'none') {
-                window.loadAllData();
-            }
-        }, 30000);
+        // Initialize
+        updateTime();
+        setInterval(updateTime, 1000);
+        
+        // Hide loading after 2 seconds
+        setTimeout(() => {
+            document.getElementById('loadingOverlay').style.display = 'none';
+        }, 2000);
+        
+        // Section switching
+        function showSection(section) {
+            // Hide all sections
+            document.querySelectorAll('.content-section').forEach(el => {
+                el.classList.remove('active');
+            });
+            
+            // Remove active from all menu items
+            document.querySelectorAll('.sidebar-menu li').forEach(el => {
+                el.classList.remove('active');
+            });
+            
+            // Show selected section
+            document.getElementById(`section-${section}`).classList.add('active');
+            
+            // Set active menu item
+            document.querySelector(`.sidebar-menu li[onclick*="${section}"]`).classList.add('active');
+        }
     </script>
 </body>
 </html>
