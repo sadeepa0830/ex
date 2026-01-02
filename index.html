@@ -3,352 +3,264 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Exam Master SL - A/L & O/L Exam Countdown</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Exam Master SL - Advanced Student Dashboard</title>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="style.css">
+    
+    <!-- PWA -->
     <link rel="manifest" href="manifest.json">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <meta name="theme-color" content="#0a0e27">
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js');
+        }
+    </script>
+    
+    <style>
+        .install-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 50px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+            z-index: 1000;
+            display: none;
+            transition: all 0.3s ease;
+        }
+        .install-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 30px rgba(102, 126, 234, 0.6);
+        }
+    </style>
 </head>
 <body>
-    <!-- Loading Screen -->
-    <div id="loadingScreen" class="loading-screen">
-        <div class="loader-content">
-            <div class="loader-ring"></div>
-            <div class="loader-dots">
-                <span></span>
-                <span></span>
-                <span></span>
-            </div>
-            <h2>EXAM MASTER</h2>
-            <p>Loading your study companion...</p>
-        </div>
+    <!-- Effects Canvas (Snow/Confetti) -->
+    <canvas id="effectCanvas"></canvas>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+        <div class="loading-text">Exam Master SL පූරණය වෙමින්...</div>
     </div>
 
-    <!-- Snowflakes Container -->
-    <div id="snowflakes"></div>
+    <!-- Install App Button -->
+    <button class="install-btn" id="installButton">
+        <i class="fas fa-download"></i> App එක ස්ථාපනය කරන්න
+    </button>
 
-    <!-- Navigation -->
-    <nav class="navbar">
-        <div class="nav-container">
-            <div class="logo">
-                <i class="fas fa-graduation-cap"></i>
-                <span>EXAM<strong>MASTER</strong></span>
+    <!-- Header Section -->
+    <header>
+        <div class="header-container">
+            <div class="logo-section">
+                <h1>EXAM MASTER SL</h1>
+                <p class="subtitle">ඔබගේ විභාග ජයග්‍රහණයේ මග පෙන්වන්නා</p>
             </div>
-            <div class="nav-actions">
-                <button class="icon-btn" onclick="toggleThemePanel()" aria-label="Theme">
-                    <i class="fas fa-palette"></i>
-                </button>
-                <button class="icon-btn" onclick="toggleProfile()" aria-label="Profile">
-                    <i class="fas fa-user-circle"></i>
-                </button>
-                <button class="icon-btn menu-btn" onclick="toggleMenu()" aria-label="Menu">
-                    <i class="fas fa-bars"></i>
-                </button>
-            </div>
-        </div>
-    </nav>
-
-    <!-- Theme Panel -->
-    <div id="themePanel" class="theme-panel">
-        <div class="theme-panel-content">
-            <div class="panel-header">
-                <h3>Choose Theme</h3>
-                <button class="panel-close" onclick="toggleThemePanel()">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="theme-grid">
-                <div class="theme-card" onclick="setTheme('default')">
-                    <div class="theme-preview" style="background: linear-gradient(135deg, #667eea, #764ba2)"></div>
-                    <span>Purple</span>
+            
+            <div class="header-controls">
+                <div class="notification-icon" id="notificationIcon" onclick="openNotifModal()">
+                    <i class="fas fa-bell"></i>
+                    <span class="notification-badge" id="notifBadge">0</span>
                 </div>
-                <div class="theme-card" onclick="setTheme('ocean')">
-                    <div class="theme-preview" style="background: linear-gradient(135deg, #2e3192, #1bffff)"></div>
-                    <span>Ocean</span>
+                
+                <div class="time-display">
+                    <div id="currentDate" class="date">-- --- ----</div>
+                    <div id="currentTime" class="time">--:--</div>
                 </div>
-                <div class="theme-card" onclick="setTheme('sunset')">
-                    <div class="theme-preview" style="background: linear-gradient(135deg, #ff6b6b, #feca57)"></div>
-                    <span>Sunset</span>
-                </div>
-                <div class="theme-card" onclick="setTheme('forest')">
-                    <div class="theme-preview" style="background: linear-gradient(135deg, #11998e, #38ef7d)"></div>
-                    <span>Forest</span>
-                </div>
-                <div class="theme-card" onclick="setTheme('dark')">
-                    <div class="theme-preview" style="background: linear-gradient(135deg, #0f0f0f, #2a2a2a)"></div>
-                    <span>Dark</span>
-                </div>
-                <div class="theme-card" onclick="setTheme('light')">
-                    <div class="theme-preview" style="background: linear-gradient(135deg, #f5f7fa, #c3cfe2)"></div>
-                    <span>Light</span>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Profile Panel -->
-    <div id="profilePanel" class="profile-panel">
-        <div class="profile-content">
-            <div class="panel-header">
-                <h3>My Profile</h3>
-                <button class="panel-close" onclick="toggleProfile()">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="avatar-selector">
-                <img id="currentAvatar" src="https://api.dicebear.com/7.x/avataaars/svg?seed=student" alt="Avatar">
-                <button class="change-avatar-btn" onclick="changeAvatar()">
-                    <i class="fas fa-camera"></i>
-                </button>
-            </div>
-            <input type="text" id="userName" placeholder="Your Name" class="profile-input">
-            <div class="profile-stats">
-                <div class="stat-item">
-                    <span class="stat-value">12</span>
-                    <span class="stat-label">Study Days</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-value">5h</span>
-                    <span class="stat-label">Study Time</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-value">85%</span>
-                    <span class="stat-label">Goal Progress</span>
-                </div>
-            </div>
-            <button class="btn-primary" onclick="saveProfile()">Save Profile</button>
-        </div>
-    </div>
-
-    <!-- Persistent Popup -->
-    <div id="persistentPopup" class="persistent-popup" style="display:none;">
-        <div class="popup-overlay" onclick="closePopup()"></div>
-        <div class="popup-card">
-            <button class="popup-close" onclick="closePopup()">×</button>
-            <div class="popup-icon"><i class="fas fa-bell"></i></div>
-            <h2 id="popupTitle"></h2>
-            <p id="popupMessage"></p>
-            <div id="popupImage" style="display:none;">
-                <img id="popupImg" src="" alt="">
-            </div>
-            <div id="popupButtons" style="display:none;">
-                <a id="popupPdfBtn" href="#" download class="btn-download">
-                    <i class="fas fa-download"></i> Download PDF
+                
+                <a href="admin.html" class="admin-link">
+                    <i class="fas fa-user-shield"></i> Admin
                 </a>
             </div>
         </div>
-    </div>
+    </header>
 
     <div class="container">
-        <!-- Hero Section -->
-        <div class="hero-section">
-            <div class="hero-bg-effect"></div>
-            <h1 class="main-title">A/L & O/L Exam<br>Countdown</h1>
-            <p class="subtitle">Your path to success starts here</p>
-
-            <!-- Exam Selector -->
-            <div class="exam-selector">
-                <div class="exam-grid" id="examGrid"></div>
+        
+        <!-- SECTION 1: Countdown Dashboard -->
+        <section class="dashboard-section">
+            <div class="section-header">
+                <h2><i class="fas fa-clock"></i> ඉදිරි විභාග කවුන්ට්ඩවුන්</h2>
+                <p>ඔබගේ විභාග දිනයන් සඳහා කවුන්ට්ඩවුන්</p>
             </div>
-
-            <!-- Selected Exam -->
-            <div class="selected-exam" id="selectedExam">
-                <span class="exam-badge">
-                    <span class="badge-dot"></span>
-                    <span id="examBadgeText">Loading...</span>
-                </span>
-                <span class="live-indicator">Live</span>
-            </div>
-
-            <!-- Countdown -->
-            <div class="countdown-display">
-                <div class="countdown-grid-2x2">
-                    <div class="time-box">
-                        <div class="time-value" id="days">00</div>
-                        <div class="time-label">DAYS</div>
-                    </div>
-                    <div class="time-box">
-                        <div class="time-value" id="hours">00</div>
-                        <div class="time-label">HOURS</div>
-                    </div>
-                    <div class="time-box">
-                        <div class="time-value" id="minutes">00</div>
-                        <div class="time-label">MINUTES</div>
-                    </div>
-                    <div class="time-box">
-                        <div class="time-value" id="seconds">00</div>
-                        <div class="time-label">SECONDS</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Quote -->
-            <div class="quote-card">
-                <i class="fas fa-quote-left"></i>
-                <p id="dailyQuote">Loading...</p>
-                <i class="fas fa-quote-right"></i>
-            </div>
-        </div>
-
-        <!-- Features -->
-        <div class="features-grid">
-            <!-- AI Card -->
-            <div class="feature-card ai-card">
-                <div class="card-header">
-                    <i class="fas fa-robot"></i>
-                    <h2>AI Assistant</h2>
-                </div>
-                <div class="ai-chat-box" id="aiChatBox">
-                    <div class="ai-message ai-message-bot">
-                        <div class="message-avatar"><i class="fas fa-robot"></i></div>
-                        <div class="message-content">Hello! I'm your study assistant. How can I help you today? 📚</div>
-                    </div>
-                </div>
-                <div class="ai-input-area">
-                    <input type="text" id="aiInput" placeholder="Ask me anything..." class="ai-input">
-                    <button onclick="sendAIMessage()" class="ai-send-btn">
-                        <i class="fas fa-paper-plane"></i>
-                    </button>
-                </div>
-            </div>
-
-            <!-- Timer Card -->
-            <div class="feature-card timer-card">
-                <div class="card-header">
-                    <i class="fas fa-clock"></i>
-                    <h2>Study Timer</h2>
-                </div>
-                <div class="timer-display">
-                    <div class="timer-circle">
-                        <svg class="timer-svg" viewBox="0 0 200 200">
-                            <defs>
-                                <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                                    <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
-                                    <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
-                                </linearGradient>
-                            </defs>
-                            <circle class="timer-bg" cx="100" cy="100" r="90"></circle>
-                            <circle class="timer-progress" id="timerProgress" cx="100" cy="100" r="90"></circle>
-                        </svg>
-                        <div class="timer-time" id="timerDisplay">25:00</div>
-                    </div>
-                </div>
-                <div class="timer-controls">
-                    <button onclick="startTimer()" class="timer-btn start-btn" id="startBtn">
-                        <i class="fas fa-play"></i> Start
-                    </button>
-                    <button onclick="pauseTimer()" class="timer-btn pause-btn" id="pauseBtn" style="display:none;">
-                        <i class="fas fa-pause"></i> Pause
-                    </button>
-                    <button onclick="resetTimer()" class="timer-btn reset-btn">
-                        <i class="fas fa-redo"></i> Reset
-                    </button>
-                </div>
-            </div>
-
-            <!-- Progress Card -->
-            <div class="feature-card progress-card">
-                <div class="card-header">
-                    <i class="fas fa-chart-line"></i>
-                    <h2>Study Progress</h2>
-                </div>
-                <div class="progress-stats">
-                    <div class="progress-item">
-                        <div class="progress-info">
-                            <span>Mathematics</span>
-                            <span>75%</span>
-                        </div>
-                        <div class="progress-bar">
-                            <div class="progress-fill" style="width: 75%"></div>
-                        </div>
-                    </div>
-                    <div class="progress-item">
-                        <div class="progress-info">
-                            <span>Science</span>
-                            <span>60%</span>
-                        </div>
-                        <div class="progress-bar">
-                            <div class="progress-fill" style="width: 60%"></div>
-                        </div>
-                    </div>
-                    <div class="progress-item">
-                        <div class="progress-info">
-                            <span>History</span>
-                            <span>85%</span>
-                        </div>
-                        <div class="progress-bar">
-                            <div class="progress-fill" style="width: 85%"></div>
+            
+            <div class="countdown-grid" id="examGrid">
+                <!-- Dynamic Countdown Cards will be injected here via app.js -->
+                <div class="exam-card loading">
+                    <div class="exam-card-content">
+                        <div class="skeleton-title"></div>
+                        <div class="skeleton-text"></div>
+                        <div class="timer-display">
+                            <div class="skeleton-time"></div>
                         </div>
                     </div>
                 </div>
-                <button class="btn-secondary">View All Subjects</button>
             </div>
+        </section>
 
-            <!-- Offline Card -->
-            <div class="feature-card offline-card">
-                <div class="card-header">
-                    <i class="fas fa-wifi"></i>
-                    <h2>Offline Mode</h2>
-                </div>
-                <div class="offline-status">
-                    <div class="status-indicator" id="connectionStatus">
-                        <div class="status-dot online"></div>
-                        <span>Connected</span>
+        <!-- SECTION 2: Chat & Community -->
+        <section class="chat-section">
+            <div class="section-header">
+                <h2><i class="fas fa-comments"></i> පොදු සාකච්ඡා මණ්ඩපය</h2>
+                <p>අනෙක් සිසුන් සමග සාකච්ඡා කරන්න</p>
+            </div>
+            
+            <div class="chat-container">
+                <div class="chat-box" id="chatBox">
+                    <!-- Chat messages will appear here -->
+                    <div class="chat-welcome">
+                        <i class="fas fa-comment-alt"></i>
+                        <h3>සාකච්ඡාව ආරම්භ කරන්න</h3>
+                        <p>ඔබේ නම ඇතුළත් කර පණිවිඩයක් යවන්න</p>
                     </div>
-                    <p>Works offline after first load</p>
                 </div>
-            </div>
-        </div>
 
-        <!-- Share -->
-        <div class="share-section">
-            <h3>Share with Friends</h3>
-            <div class="share-buttons">
-                <button onclick="shareOn('whatsapp')" class="share-btn whatsapp">
-                    <i class="fab fa-whatsapp"></i> WhatsApp
-                </button>
-                <button onclick="shareOn('facebook')" class="share-btn facebook">
-                    <i class="fab fa-facebook"></i> Facebook
-                </button>
-                <button onclick="shareOn('twitter')" class="share-btn twitter">
-                    <i class="fab fa-twitter"></i> Twitter
-                </button>
-                <button onclick="copyLink()" class="share-btn copy">
-                    <i class="fas fa-link"></i> Copy Link
-                </button>
+                <div class="chat-controls">
+                    <div class="input-group">
+                        <input type="text" id="chatName" class="glass-input" placeholder="ඔබේ නම" maxlength="30">
+                    </div>
+                    <div class="input-group message-input">
+                        <input type="text" id="chatMessage" class="glass-input" placeholder="පණිවිඩය ඇතුලත් කරන්න..." maxlength="500">
+                        <button class="send-btn" onclick="sendComment()">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="chat-info">
+                    <i class="fas fa-info-circle"></i>
+                    <span>සියලුම පණිවිඩ පොදු වේ. කරුණාකර හොඳ භාෂාවක් භාවිතා කරන්න</span>
+                </div>
             </div>
-        </div>
+        </section>
 
-        <!-- Footer -->
-        <footer class="footer">
-            <div class="footer-content">
-                <div class="footer-logo">
-                    <i class="fas fa-graduation-cap"></i>
-                    <h3>EXAM<strong>MASTER</strong></h3>
-                    <p>Your Study Companion</p>
-                </div>
-                <div class="footer-links">
-                    <a href="admin.html"><i class="fas fa-shield-alt"></i> Admin</a>
-                    <a href="#"><i class="fas fa-info-circle"></i> About</a>
-                    <a href="#"><i class="fas fa-envelope"></i> Contact</a>
-                </div>
-                <div class="footer-copyright">
-                    <p>© 2025 Exam Master SL</p>
-                    <p>Made with <i class="fas fa-heart"></i> for Students</p>
-                </div>
-            </div>
-        </footer>
     </div>
 
-    <!-- Floating Buttons -->
-    <div class="floating-buttons">
-        <button class="fab-btn" onclick="scrollToTop()">
-            <i class="fas fa-arrow-up"></i>
-        </button>
+    <!-- Notification Modal (Advanced: Image/PDF Support) -->
+    <div id="notifModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-bell"></i> විශේෂ නිවේදන</h3>
+                <button class="modal-close" onclick="closeNotifModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="modalNotifContent">
+                <!-- Dynamic Content: Image or PDF Button -->
+                <div class="loading-notifications">
+                    <div class="spinner small"></div>
+                    <p>නිවේදන පූරණය වෙමින්...</p>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <div id="toast" class="toast"></div>
+    <!-- Footer -->
+    <footer>
+        <div class="footer-grid">
+            <div class="footer-col">
+                <h3>Exam Master SL</h3>
+                <p>
+                    උසස් පෙළ සිසුන් සඳහා සකසන ලද, තාක්ෂණයෙන් පිරිපුන් අධ්‍යාපනික අත්වැල.
+                </p>
+                <div class="app-badges">
+                    <span class="app-badge">
+                        <i class="fas fa-bolt"></i> Fast
+                    </span>
+                    <span class="app-badge">
+                        <i class="fas fa-shield-alt"></i> Secure
+                    </span>
+                    <span class="app-badge">
+                        <i class="fas fa-mobile-alt"></i> PWA
+                    </span>
+                </div>
+            </div>
+            <div class="footer-col">
+                <h3>ක්ෂණික සබැඳි</h3>
+                <ul>
+                    <li><a href="#"><i class="fas fa-home"></i> මුල් පිටුව</a></li>
+                    <li><a href="#"><i class="fas fa-book"></i> විෂය නිර්දේශ</a></li>
+                    <li><a href="#"><i class="fas fa-file-pdf"></i> පසුගිය ප්‍රශ්න පත්‍ර</a></li>
+                    <li><a href="admin.html"><i class="fas fa-user-cog"></i> පරිපාලක කොටස</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h3>සම්බන්ධ වන්න</h3>
+                <ul>
+                    <li><a href="#"><i class="fab fa-facebook"></i> Facebook</a></li>
+                    <li><a href="#"><i class="fab fa-youtube"></i> YouTube</a></li>
+                    <li><a href="#"><i class="fab fa-telegram"></i> Telegram Group</a></li>
+                    <li><a href="#"><i class="fab fa-whatsapp"></i> WhatsApp</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="copyright">
+            &copy; 2026 Exam Master SL. All Rights Reserved. 
+            <span style="color: #667eea;">♥</span> Made in Sri Lanka
+        </div>
+    </footer>
+
+    <!-- Main Logic -->
     <script type="module" src="app.js"></script>
+    
+    <!-- PWA Installation -->
+    <script>
+        let deferredPrompt;
+        
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('installButton').style.display = 'block';
+        });
+        
+        document.getElementById('installButton').addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') {
+                    document.getElementById('installButton').style.display = 'none';
+                }
+                deferredPrompt = null;
+            }
+        });
+        
+        // Update time every second
+        function updateTime() {
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('si-LK', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            });
+            const timeStr = now.toLocaleTimeString('si-LK', { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
+            
+            document.getElementById('currentDate').textContent = dateStr;
+            document.getElementById('currentTime').textContent = timeStr;
+        }
+        
+        updateTime();
+        setInterval(updateTime, 1000);
+        
+        // Show loading initially
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                document.getElementById('loadingOverlay').style.display = 'none';
+            }, 1000);
+        });
+    </script>
+
 </body>
 </html>
