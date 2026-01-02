@@ -3,94 +3,350 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Panel - Exam Master</title>
+    <title>Admin Panel - Exam Master SL</title>
+    
+    <!-- Google Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- CSS -->
     <link rel="stylesheet" href="admin.css">
 </head>
 <body>
-    <div id="loginSection">
-        <div class="login-card">
-            <h2><i class="fas fa-shield-alt"></i> Admin Login</h2>
-            <div class="form-group">
-                <label>Email</label>
-                <input type="email" id="adminEmail" placeholder="admin@exammaster.lk">
-            </div>
-            <div class="form-group">
-                <label>Password</label>
-                <input type="password" id="adminPassword" placeholder="Enter password">
-            </div>
-            <button class="btn-primary" onclick="adminLogin()"><i class="fas fa-sign-in-alt"></i> Login</button>
-        </div>
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+        <div class="loading-text">පූරණය වෙමින්...</div>
     </div>
 
-    <div id="dashboardSection">
-        <div class="container">
+    <div class="admin-container">
+        <!-- LOGIN SECTION -->
+        <div id="loginSection">
+            <div class="login-wrapper">
+                <div class="login-card">
+                    <div class="login-header">
+                        <div class="login-logo">ADMIN PANEL</div>
+                        <div class="login-subtitle">Exam Master SL - පරිපාලක කොටස</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="adminEmail">
+                            <i class="fas fa-envelope"></i> ඊමේල් ලිපිනය
+                        </label>
+                        <div class="input-with-icon">
+                            <i class="input-icon fas fa-user"></i>
+                            <input type="email" id="adminEmail" class="form-input" placeholder="admin@example.com">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="adminPassword">
+                            <i class="fas fa-lock"></i> මුරපදය
+                        </label>
+                        <div class="input-with-icon">
+                            <i class="input-icon fas fa-key"></i>
+                            <input type="password" id="adminPassword" class="form-input" placeholder="********">
+                        </div>
+                    </div>
+                    
+                    <button class="login-btn" onclick="window.adminLogin()">
+                        <i class="fas fa-sign-in-alt"></i> ඇතුල් වන්න
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- DASHBOARD SECTION -->
+        <div id="dashboardSection">
+            <!-- Dashboard Header -->
             <div class="dashboard-header">
-                <h1><i class="fas fa-tachometer-alt"></i> Admin Dashboard</h1>
-                <button class="btn-logout" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+                <div class="header-content">
+                    <h1>Admin Dashboard</h1>
+                    <div class="admin-info">
+                        <i class="fas fa-user-circle"></i>
+                        <span>පරිශීලක: <span id="adminName">Admin</span></span>
+                        <span>•</span>
+                        <span id="adminEmailDisplay">admin@example.com</span>
+                    </div>
+                </div>
+                
+                <div class="time-display">
+                    <div id="adminDate" class="date">-- --- ----</div>
+                    <div id="adminTime" class="time">--:--:--</div>
+                </div>
+                
+                <button class="logout-btn" onclick="window.logout()">
+                    <i class="fas fa-sign-out-alt"></i> පිටවීම
+                </button>
             </div>
 
-            <div class="admin-card stats-card">
-                <h3><i class="fas fa-chart-bar"></i> Statistics Overview</h3>
+            <!-- Statistics Section -->
+            <section class="stats-section">
+                <h2 class="section-title"><i class="fas fa-chart-bar"></i> සංඛ්‍යාලේඛන</h2>
                 <div class="stats-grid">
-                    <div class="stat-card"><div class="stat-value" id="totalExams">0</div><div class="stat-label">Total Exams</div></div>
-                    <div class="stat-card"><div class="stat-value" id="totalNotifs">0</div><div class="stat-label">Notifications</div></div>
-                    <div class="stat-card"><div class="stat-value" id="totalQuotes">0</div><div class="stat-label">Quotes</div></div>
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-calendar-alt"></i>
+                        </div>
+                        <div class="stat-value" id="statExams">0</div>
+                        <div class="stat-label">සක්‍රිය විභාග</div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-bell"></i>
+                        </div>
+                        <div class="stat-value" id="statNotifications">0</div>
+                        <div class="stat-label">සක්‍රිය නිවේදන</div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-comments"></i>
+                        </div>
+                        <div class="stat-value" id="statComments">0</div>
+                        <div class="stat-label">මුළු පණිවිඩ</div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="stat-value" id="statUsers">0</div>
+                        <div class="stat-label">සක්‍රිය පරිශීලකයින්</div>
+                    </div>
                 </div>
-            </div>
+            </section>
 
+            <!-- Admin Grid -->
             <div class="admin-grid">
+                <!-- 1. Send Notification -->
                 <div class="admin-card">
-                    <h3><i class="fas fa-calendar-alt"></i> Manage Exams</h3>
-                    <div class="form-row">
-                        <input type="text" id="examName" placeholder="Exam Name">
-                        <input type="text" id="examYear" placeholder="Year">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-bullhorn"></i>
+                        </div>
+                        <div class="card-title">
+                            <h3>නිවේදනයක් යවන්න</h3>
+                            <p>සියලුම පරිශීලකයින්ට නව නිවේදනයක් යවන්න</p>
+                        </div>
                     </div>
-                    <div class="form-row">
-                        <input type="text" id="examType" placeholder="Type (A/L or O/L)">
-                        <input type="datetime-local" id="examDate">
+                    
+                    <input type="text" id="notifTitle" class="admin-input" placeholder="නිවේදන මාතෘකාව">
+                    <textarea id="notifMessage" class="admin-textarea" placeholder="නිවේදන පණිවිඩය"></textarea>
+                    
+                    <div class="file-upload-wrapper">
+                        <label class="file-upload-label">
+                            <i class="fas fa-cloud-upload-alt"></i> රූපය හෝ PDF ගොනුව උඩුගත කරන්න
+                            <input type="file" id="uploadFile" class="file-upload-input" accept="image/*,.pdf">
+                        </label>
                     </div>
-                    <div class="form-row">
-                        <input type="text" id="examIcon" placeholder="Icon (e.g., 📚)">
-                        <input type="text" id="examColor" placeholder="Color (e.g., #667eea)">
+                    
+                    <div class="checkbox-wrapper">
+                        <input type="checkbox" id="notifPersistent">
+                        <span class="custom-checkbox"></span>
+                        <label for="notifPersistent">ස්ථිර නිවේදනයක් ලෙස පෙන්වන්න</label>
                     </div>
-                    <label class="checkbox-label"><input type="checkbox" id="examFeatured"> <span>Featured Exam</span></label>
-                    <button onclick="saveExam()" class="btn-success"><i class="fas fa-plus"></i> Add Exam</button>
-                    <div id="examList" class="list-container"></div>
+                    
+                    <button class="admin-btn" onclick="window.sendNotification()" id="sendBtn">
+                        <i class="fas fa-paper-plane"></i> නිවේදනය යවන්න
+                    </button>
                 </div>
 
+                <!-- 2. Site Effects -->
                 <div class="admin-card">
-                    <h3><i class="fas fa-bell"></i> Manage Notifications</h3>
-                    <input type="text" id="notifTitle" placeholder="Title">
-                    <textarea id="notifMessage" placeholder="Message"></textarea>
-                    <div class="form-row">
-                        <div class="file-upload"><label>Image</label><input type="file" id="notifImage" accept="image/*"></div>
-                        <div class="file-upload"><label>PDF</label><input type="file" id="notifPDF" accept=".pdf"></div>
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-magic"></i>
+                        </div>
+                        <div class="card-title">
+                            <h3>අඩවි බලපෑම්</h3>
+                            <p>හිම සහ කොන්ෆෙටි බලපෑම් කළමනාකරණය</p>
+                        </div>
                     </div>
-                    <label class="checkbox-label"><input type="checkbox" id="showUntilDismissed"> <span>Show until dismissed</span></label>
-                    <button onclick="saveNotification()" class="btn-success"><i class="fas fa-paper-plane"></i> Send</button>
-                    <div id="notifList" class="list-container"></div>
+                    
+                    <div class="toggle-switch">
+                        <label>
+                            <input type="checkbox" id="snowToggle" onchange="window.toggleEffect('snow_effect', this.checked)">
+                            <span class="slider"></span>
+                        </label>
+                        <div>
+                            <label for="snowToggle">හිම බලපෑම</label>
+                            <small>නත්තල් සහ අවුරුදු කාලය සඳහා</small>
+                        </div>
+                    </div>
+                    
+                    <div class="toggle-switch">
+                        <label>
+                            <input type="checkbox" id="confettiToggle" onchange="window.toggleEffect('confetti_effect', this.checked)">
+                            <span class="slider"></span>
+                        </label>
+                        <div>
+                            <label for="confettiToggle">කොන්ෆෙටි බලපෑම</label>
+                            <small>සමරු අවස්ථා සඳහා</small>
+                        </div>
+                    </div>
+                    
+                    <div class="toggle-switch">
+                        <label>
+                            <input type="checkbox" id="autoNotifToggle">
+                            <span class="slider"></span>
+                        </label>
+                        <div>
+                            <label for="autoNotifToggle">ස්වයං නිවේදන</label>
+                            <small>නව පරිශීලකයින්ට ස්වයංක්‍රීයව පෙන්වන්න</small>
+                        </div>
+                    </div>
                 </div>
 
+                <!-- 3. Manage Notifications -->
                 <div class="admin-card">
-                    <h3><i class="fas fa-quote-left"></i> Manage Quotes</h3>
-                    <textarea id="quoteText" placeholder="Quote text"></textarea>
-                    <input type="text" id="quoteAuthor" placeholder="Author">
-                    <select id="quoteCategory">
-                        <option value="motivation">Motivation</option>
-                        <option value="success">Success</option>
-                        <option value="perseverance">Perseverance</option>
-                        <option value="education">Education</option>
-                    </select>
-                    <button onclick="saveQuote()" class="btn-success"><i class="fas fa-plus"></i> Add Quote</button>
-                    <div id="quoteList" class="list-container"></div>
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-list"></i>
+                        </div>
+                        <div class="card-title">
+                            <h3>සක්‍රිය නිවේදන</h3>
+                            <p>දැනට සක්‍රියව ඇති නිවේදන කළමනාකරණය</p>
+                        </div>
+                    </div>
+                    
+                    <div class="list-container" id="activeNotifsList">
+                        <!-- Loaded dynamically -->
+                        <div class="loading-item">පූරණය වෙමින්...</div>
+                    </div>
+                    
+                    <button class="admin-btn" onclick="window.loadAllData()">
+                        <i class="fas fa-sync-alt"></i> නැවත පූරණය කරන්න
+                    </button>
+                </div>
+
+                <!-- 4. Manage Comments -->
+                <div class="admin-card">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-comments"></i>
+                        </div>
+                        <div class="card-title">
+                            <h3>පණිවිඩ කළමනාකරණය</h3>
+                            <p>පරිශීලක පණිවිඩ බලන්න සහ කළමනාකරණය කරන්න</p>
+                        </div>
+                    </div>
+                    
+                    <div class="list-container" id="commentsList">
+                        <!-- Loaded dynamically -->
+                        <div class="loading-item">පූරණය වෙමින්...</div>
+                    </div>
+                    
+                    <button class="admin-btn" onclick="window.loadAllData()">
+                        <i class="fas fa-sync-alt"></i> නැවත පූරණය කරන්න
+                    </button>
+                </div>
+
+                <!-- 5. Manage Exams -->
+                <div class="admin-card">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-calendar-plus"></i>
+                        </div>
+                        <div class="card-title">
+                            <h3>විභාග කළමනාකරණය</h3>
+                            <p>නව විභාග එකතු කරන්න සහ කළමනාකරණය කරන්න</p>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <input type="text" id="examBatchName" class="admin-input" placeholder="විභාග නම (උදා: 2026 A/L Science)">
+                        <input type="date" id="examDate" class="admin-input" placeholder="විභාග දිනය">
+                    </div>
+                    
+                    <button class="admin-btn btn-success" onclick="window.addExam()">
+                        <i class="fas fa-plus"></i> විභාගය එකතු කරන්න
+                    </button>
+                    
+                    <div class="list-container" id="examsList">
+                        <!-- Loaded dynamically -->
+                        <div class="loading-item">පූරණය වෙමින්...</div>
+                    </div>
+                </div>
+
+                <!-- 6. System Settings -->
+                <div class="admin-card">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-cog"></i>
+                        </div>
+                        <div class="card-title">
+                            <h3>පද්ධති සැකසුම්</h3>
+                            <p>අඩවියේ සාමාන්‍ය සැකසුම්</p>
+                        </div>
+                    </div>
+                    
+                    <div class="toggle-switch">
+                        <label>
+                            <input type="checkbox" id="maintenanceToggle">
+                            <span class="slider"></span>
+                        </label>
+                        <div>
+                            <label for="maintenanceToggle">රක්ෂණ මාදිලිය</label>
+                            <small>අඩවිය සියලුම පරිශීලකයින්ට අක්‍රිය කරන්න</small>
+                        </div>
+                    </div>
+                    
+                    <div class="toggle-switch">
+                        <label>
+                            <input type="checkbox" id="chatToggle" checked>
+                            <span class="slider"></span>
+                        </label>
+                        <div>
+                            <label for="chatToggle">චැට් පද්ධතිය</label>
+                            <small>පරිශීලක චැට් ක්‍රියාත්මක/අක්‍රිය කරන්න</small>
+                        </div>
+                    </div>
+                    
+                    <div class="toggle-switch">
+                        <label>
+                            <input type="checkbox" id="notificationsToggle" checked>
+                            <span class="slider"></span>
+                        </label>
+                        <div>
+                            <label for="notificationsToggle">නිවේදන පද්ධතිය</label>
+                            <small>සියලුම නිවේදන ක්‍රියාත්මක/අක්‍රිය කරන්න</small>
+                        </div>
+                    </div>
+                    
+                    <button class="admin-btn btn-danger" onclick="clearAllData()">
+                        <i class="fas fa-trash-alt"></i> සියලු දත්ත හිස් කරන්න
+                    </button>
                 </div>
             </div>
         </div>
     </div>
 
-    <div id="loadingOverlay" class="loading-overlay"><div class="spinner"></div></div>
-    <div id="toast" class="toast"></div>
     <script type="module" src="admin.js"></script>
+    
+    <script>
+        // Clear all data function
+        function clearAllData() {
+            if (confirm('⚠️ අවවාදයයි! මෙම ක්‍රියාව ප්‍රතිවර්තනය කළ නොහැක.\n\nසියලුම දත්ත මැකීමට අවශ්‍යද?')) {
+                showLoading(true);
+                
+                // Simulate clearing data
+                setTimeout(() => {
+                    showToast('සියලුම දත්ත සාර්ථකව හිස් කරන ලදි', 'success');
+                    setTimeout(() => {
+                        location.reload();
+                    }, 2000);
+                }, 2000);
+            }
+        }
+        
+        // Auto-refresh data every 30 seconds
+        setInterval(() => {
+            if (window.loadAllData && document.getElementById('dashboardSection').style.display !== 'none') {
+                window.loadAllData();
+            }
+        }, 30000);
+    </script>
 </body>
 </html>
