@@ -350,8 +350,17 @@ async function loadChatData() {
                 const date = new Date(comment.created_at);
                 const row = document.createElement('tr');
                 row.innerHTML = `
-                    <td>${comment.user_name}</td>
+                    <td>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span>${comment.user_name}</span>
+                            <button class="btn-icon btn-danger" onclick="banUser('${comment.user_name}')" 
+                                    style="padding: 4px 8px; font-size: 0.8rem;">
+                                <i class="fas fa-ban"></i> Ban
+                            </button>
+                        </div>
+                    </td>
                     <td>${comment.message.length > 100 ? comment.message.substring(0, 100) + '...' : comment.message}</td>
+                    <td>${comment.ip_address || 'N/A'}</td>
                     <td>${date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</td>
                     <td class="actions">
                         <button class="btn-icon" onclick="viewChatMessage(${comment.id})">
@@ -378,7 +387,7 @@ async function loadChatData() {
         } else {
             tableBody.innerHTML = `
                 <tr>
-                    <td colspan="4" class="text-center">
+                    <td colspan="5" class="text-center">
                         No chat messages yet
                     </td>
                 </tr>
@@ -459,17 +468,31 @@ async function addNewExam() {
     showLoading(true);
     
     try {
-        const { error } = await supabase
-            .from('exams')
-            .insert([{
-                batch_name: name,
-                exam_date: dateTime + ':00+05:30', // Sri Lanka timezone
-                description: description,
-                status: 'enabled',
-                created_at: new Date().toISOString()
-            }]);
+        const examData = {
+            batch_name: name,
+            exam_date: dateTime + ':00+05:30',
+            description: description,
+            status: 'enabled',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+        };
         
-        if (error) throw error;
+        console.log('Inserting exam data:', examData);
+        
+        const { data, error } = await supabase
+            .from('exams')
+            .insert([examData])
+            .select();
+        
+        if (error) {
+            console.error('Supabase error:', error);
+            if (error.message.includes('check constraint')) {
+                showToast('Please check the exam status (should be "enabled" or "disabled")', 'error');
+            } else {
+                showToast('Failed to add exam: ' + error.message, 'error');
+            }
+            return;
+        }
         
         showToast('Exam added successfully!', 'success');
         
@@ -494,7 +517,7 @@ async function addNewExam() {
 async function toggleExamStatus(id, currentStatus) {
     const newStatus = currentStatus === 'enabled' ? 'disabled' : 'enabled';
     
-    if (!confirm(`Are you sure you want to ${newStatus === 'enabled' ? 'activate' : 'deactivate'} this exam?`)) {
+    if (!await showConfirmation(`Are you sure you want to ${newStatus === 'enabled' ? 'activate' : 'deactivate'} this exam?`)) {
         return;
     }
     
@@ -520,7 +543,7 @@ async function toggleExamStatus(id, currentStatus) {
 }
 
 async function deleteExam(id) {
-    if (!confirm('Are you sure you want to delete this exam? This action cannot be undone.')) {
+    if (!await showConfirmation('Are you sure you want to delete this exam? This action cannot be undone.')) {
         return;
     }
     
@@ -552,6 +575,7 @@ async function sendNotification() {
     const isImportant = document.getElementById('notificationImportant')?.checked;
     const isPersistent = document.getElementById('notificationPersistent')?.checked;
     const imageFile = document.getElementById('notificationImage')?.files[0];
+    const pdfFile = document.getElementById('notificationPdf')?.files[0];
     
     if (!title) {
         showToast('Please enter a notification title', 'error');
@@ -562,10 +586,11 @@ async function sendNotification() {
     
     try {
         let imageUrl = null;
+        let pdfUrl = null;
         
         // Upload image if selected
         if (imageFile) {
-            const fileName = `${Date.now()}_${imageFile.name.replace(/\s+/g, '_')}`;
+            const fileName = `image_${Date.now()}_${imageFile.name.replace(/\s+/g, '_')}`;
             const { data, error } = await supabase.storage
                 .from('uploads')
                 .upload(`notifications/${fileName}`, imageFile);
@@ -580,6 +605,23 @@ async function sendNotification() {
             imageUrl = publicUrl;
         }
         
+        // Upload PDF if selected
+        if (pdfFile) {
+            const fileName = `pdf_${Date.now()}_${pdfFile.name.replace(/\s+/g, '_')}`;
+            const { data, error } = await supabase.storage
+                .from('uploads')
+                .upload(`notifications/${fileName}`, pdfFile);
+            
+            if (error) throw error;
+            
+            // Get public URL
+            const { data: { publicUrl } } = supabase.storage
+                .from('uploads')
+                .getPublicUrl(`notifications/${fileName}`);
+            
+            pdfUrl = publicUrl;
+        }
+        
         // Insert notification
         const { error } = await supabase
             .from('notifications')
@@ -587,6 +629,7 @@ async function sendNotification() {
                 title: title,
                 message: message,
                 image_url: imageUrl,
+                pdf_url: pdfUrl,
                 is_active: true,
                 show_until_dismissed: isPersistent,
                 priority: isImportant ? 2 : 1,
@@ -604,6 +647,7 @@ async function sendNotification() {
         document.getElementById('notificationImportant').checked = false;
         document.getElementById('notificationPersistent').checked = false;
         document.getElementById('notificationImage').value = '';
+        document.getElementById('notificationPdf').value = '';
         
         // Refresh data
         await loadNotifications();
@@ -619,7 +663,7 @@ async function sendNotification() {
 }
 
 async function deleteNotification(id) {
-    if (!confirm('Are you sure you want to delete this notification?')) {
+    if (!await showConfirmation('Are you sure you want to delete this notification?')) {
         return;
     }
     
@@ -646,7 +690,7 @@ async function deleteNotification(id) {
 }
 
 async function deleteChatMessage(id) {
-    if (!confirm('Are you sure you want to delete this chat message?')) {
+    if (!await showConfirmation('Are you sure you want to delete this chat message?')) {
         return;
     }
     
@@ -667,6 +711,62 @@ async function deleteChatMessage(id) {
     } catch (error) {
         console.error('Error deleting chat message:', error);
         showToast('Failed to delete chat message', 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+// User Management Functions for Chat
+async function banUser(userName) {
+    if (!await showConfirmation(`Are you sure you want to ban user "${userName}"?`)) {
+        return;
+    }
+    
+    showLoading(true);
+    
+    try {
+        // First get user's IP from comments
+        const { data: userComments, error: fetchError } = await supabase
+            .from('comments')
+            .select('ip_address')
+            .eq('user_name', userName)
+            .limit(1);
+        
+        if (fetchError) throw fetchError;
+        
+        if (userComments && userComments.length > 0) {
+            const ipAddress = userComments[0].ip_address;
+            
+            // Add to banned_users table
+            const { error } = await supabase
+                .from('banned_users')
+                .insert([{
+                    user_name: userName,
+                    ip_address: ipAddress,
+                    banned_at: new Date().toISOString(),
+                    reason: 'Inappropriate behavior in chat',
+                    banned_by: currentUser?.email || 'admin'
+                }]);
+            
+            if (error) throw error;
+            
+            // Delete all user's messages
+            const { error: deleteError } = await supabase
+                .from('comments')
+                .delete()
+                .eq('user_name', userName);
+            
+            if (deleteError) throw deleteError;
+            
+            showToast(`User "${userName}" has been banned successfully`, 'success');
+            await loadChatData();
+        } else {
+            showToast('User not found in chat records', 'error');
+        }
+        
+    } catch (error) {
+        console.error('Error banning user:', error);
+        showToast('Failed to ban user', 'error');
     } finally {
         showLoading(false);
     }
@@ -771,6 +871,89 @@ function backupDatabase() {
     // In a real application, this would trigger a server-side backup process
 }
 
+// Confirmation Modal
+function showConfirmation(message) {
+    return new Promise((resolve) => {
+        const modal = document.createElement('div');
+        modal.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            backdrop-filter: blur(5px);
+        `;
+        
+        modal.innerHTML = `
+            <div style="
+                background: #1e293b;
+                border-radius: 16px;
+                padding: 30px;
+                max-width: 400px;
+                width: 90%;
+                border: 2px solid #4361ee;
+                text-align: center;
+            ">
+                <div style="font-size: 3rem; color: #f8961e; margin-bottom: 20px;">
+                    ⚠️
+                </div>
+                <h3 style="color: #f8fafc; margin-bottom: 15px; font-size: 1.2rem;">
+                    Confirm Action
+                </h3>
+                <p style="color: #cbd5e1; margin-bottom: 25px; line-height: 1.5;">
+                    ${message}
+                </p>
+                <div style="display: flex; gap: 15px; justify-content: center;">
+                    <button id="confirmCancel" style="
+                        padding: 12px 25px;
+                        background: #0f172a;
+                        border: 1px solid #334155;
+                        color: #f8fafc;
+                        border-radius: 8px;
+                        cursor: pointer;
+                        font-weight: 500;
+                        flex: 1;
+                    ">
+                        Cancel
+                    </button>
+                    <button id="confirmOk" style="
+                        padding: 12px 25px;
+                        background: linear-gradient(135deg, #4361ee, #7209b7);
+                        border: none;
+                        color: white;
+                        border-radius: 8px;
+                        cursor: pointer;
+                        font-weight: 500;
+                        flex: 1;
+                    ">
+                        Confirm
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        document.body.style.overflow = 'hidden';
+        
+        document.getElementById('confirmCancel').addEventListener('click', () => {
+            document.body.removeChild(modal);
+            document.body.style.overflow = 'auto';
+            resolve(false);
+        });
+        
+        document.getElementById('confirmOk').addEventListener('click', () => {
+            document.body.removeChild(modal);
+            document.body.style.overflow = 'auto';
+            resolve(true);
+        });
+    });
+}
+
 // ==========================================
 // INITIALIZATION
 // ==========================================
@@ -819,6 +1002,7 @@ window.toggleTheme = toggleTheme;
 window.selectTheme = selectTheme;
 window.refreshChat = refreshChat;
 window.backupDatabase = backupDatabase;
+window.banUser = banUser;
 window.showSection = function(section) {
     // Hide all sections
     document.querySelectorAll('.content-section').forEach(el => {
@@ -840,7 +1024,7 @@ window.showSection = function(section) {
     }
 };
 
-// View functions (to be implemented)
+// View functions
 window.viewNotification = function(id) {
     showToast('View notification feature coming soon', 'info');
 };
