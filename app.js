@@ -19,6 +19,17 @@ let effectCtx = null;
 let effectAnimationId = null;
 let isFirstVisit = true;
 
+// Daily Sinhala Motivational Messages
+const sinhalaMessages = {
+    monday: "සුභ සදුදා! අද ඔබේ ඉලක්ක සාක්ෂාත් කර ගැනීමට පළමු පියවර ගන්න.",
+    tuesday: "සුභ අඟහරුවාදා! දැන් ඔබ කරන සෑම වැඩක්ම අනාගතය සාදයි.",
+    wednesday: "සුභ බදාදා! දැඩි වෙනවා, ඔබට හැකියාව තියෙනවා.",
+    thursday: "සුභ බ්‍රහස්පතින්දා! අද ඔබේ දැනුම වැඩි කර ගන්න.",
+    friday: "සුභ සිකුරාදා! සතිය අවසානයේදී ඔබේ ප්‍රගතිය සමාලෝචනය කරන්න.",
+    saturday: "සුභ සෙනසුරාදා! විවේක ගත කරන අතරම අල්ප වේලාවක් ඉගෙන ගන්න.",
+    sunday: "සුභ ඉරිදා! හෙට ආරම්භ වන සතිය සඳහා සූදානම් වන්න."
+};
+
 // ==========================================
 // INITIALIZATION
 // ==========================================
@@ -42,6 +53,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // 5. Check if first visit for popup
     checkFirstVisit();
+    
+    // 6. Check for daily motivation
+    await checkDailyNotification();
+    
+    // 7. Add CSS for animations
+    addAnimationStyles();
 });
 
 // ==========================================
@@ -69,9 +86,9 @@ async function loadExams() {
         } else {
             grid.innerHTML = `
                 <div class="exam-card" style="grid-column: 1/-1; text-align: center; padding: 40px;">
-                    <i class="fas fa-calendar-times" style="font-size: 3rem; color: var(--nt-muted); margin-bottom: 20px;"></i>
-                    <h3 style="color: var(--nt-text); margin-bottom: 10px;">දැනට සක්‍රිය විභාග නොමැත</h3>
-                    <p style="color: var(--nt-muted);">නව විභාග එකතු කිරීමට පරිපාලක අඩවියට පිවිසෙන්න</p>
+                    <i class="fas fa-calendar-times" style="font-size: 3rem; color: #94a3b8; margin-bottom: 20px;"></i>
+                    <h3 style="color: #f8fafc; margin-bottom: 10px;">දැනට සක්‍රිය විභාග නොමැත</h3>
+                    <p style="color: #94a3b8;">නව විභාග එකතු කිරීමට පරිපාලක අඩවියට පිවිසෙන්න</p>
                 </div>
             `;
         }
@@ -135,7 +152,7 @@ function startTimerForExam(exam) {
             if (card) {
                 card.querySelector('.timer-display').innerHTML = `
                     <div style="text-align: center; padding: 20px;">
-                        <span style="color: var(--pk-success); font-weight: bold; font-size: 1.2rem;">
+                        <span style="color: #4cc9f0; font-weight: bold; font-size: 1.2rem;">
                             <i class="fas fa-check-circle"></i> විභාගය අවසන්
                         </span>
                     </div>
@@ -214,6 +231,97 @@ function checkFirstVisit() {
     }
 }
 
+// Check and send daily notification
+async function checkDailyNotification() {
+    const today = new Date().getDay(); // 0 = Sunday, 1 = Monday, etc.
+    const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+    const todayKey = days[today];
+    const message = sinhalaMessages[todayKey];
+    
+    // Check if we've shown today's message
+    const lastShown = localStorage.getItem('last_daily_notif');
+    const todayStr = new Date().toDateString();
+    
+    if (lastShown !== todayStr) {
+        // Show notification
+        showSinhalaNotification(message);
+        
+        // Save to localStorage
+        localStorage.setItem('last_daily_notif', todayStr);
+        
+        // Also save to database if admin is logged in
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+                await supabase
+                    .from('daily_motivations')
+                    .insert([{
+                        day: todayKey,
+                        message: message,
+                        shown_at: new Date().toISOString(),
+                        user_email: user.email
+                    }]);
+            }
+        } catch (error) {
+            console.error('Error saving motivation:', error);
+        }
+    }
+}
+
+function showSinhalaNotification(message) {
+    // Create notification element
+    const notif = document.createElement('div');
+    notif.className = 'sinhala-notification';
+    notif.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: linear-gradient(135deg, #4361ee, #7209b7);
+        color: white;
+        padding: 20px;
+        border-radius: 15px;
+        box-shadow: 0 10px 25px rgba(67, 97, 238, 0.5);
+        z-index: 1002;
+        max-width: 350px;
+        animation: slideInRight 0.5s ease, fadeOut 0.5s ease 8.5s forwards;
+        border-left: 5px solid #4cc9f0;
+        font-family: 'Inter', sans-serif;
+    `;
+    
+    notif.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 10px;">
+            <div style="font-size: 2rem;">💪</div>
+            <div>
+                <h4 style="margin: 0; font-size: 1.1rem; color: white;">දිනෙක උපදෙසක්</h4>
+                <small style="opacity: 0.8; font-size: 0.8rem;">${new Date().toLocaleDateString('si-LK', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</small>
+            </div>
+        </div>
+        <p style="margin: 0; line-height: 1.5; font-size: 1rem;">${message}</p>
+        <div style="margin-top: 15px; text-align: right;">
+            <button onclick="this.parentElement.parentElement.remove()" style="
+                background: rgba(255, 255, 255, 0.2);
+                border: none;
+                color: white;
+                padding: 5px 15px;
+                border-radius: 20px;
+                cursor: pointer;
+                font-size: 0.9rem;
+            ">
+                හරි
+            </button>
+        </div>
+    `;
+    
+    document.body.appendChild(notif);
+    
+    // Auto remove after 9 seconds
+    setTimeout(() => {
+        if (notif.parentElement) {
+            notif.remove();
+        }
+    }, 9000);
+}
+
 async function openNotifModal() {
     const modal = document.getElementById('notifModal');
     const contentDiv = document.getElementById('modalNotifContent');
@@ -228,9 +336,9 @@ async function openNotifModal() {
     if (activeNotifications.length === 0) {
         contentDiv.innerHTML = `
             <div style="text-align: center; padding: 40px 20px;">
-                <i class="far fa-bell" style="font-size: 3rem; color: var(--nt-muted); margin-bottom: 20px;"></i>
-                <h4 style="color: var(--nt-text); margin-bottom: 10px;">දැනට විශේෂ නිවේදන නොමැත</h4>
-                <p style="color: var(--nt-muted);">නව නිවේදන සඳහා නිතර පරීක්ෂා කරන්න</p>
+                <i class="far fa-bell" style="font-size: 3rem; color: #94a3b8; margin-bottom: 20px;"></i>
+                <h4 style="color: #f8fafc; margin-bottom: 10px;">දැනට විශේෂ නිවේදන නොමැත</h4>
+                <p style="color: #94a3b8;">නව නිවේදන සඳහා නිතර පරීක්ෂා කරන්න</p>
             </div>
         `;
     } else {
@@ -249,7 +357,7 @@ async function openNotifModal() {
             if (notif.pdf_url) {
                 mediaContent += `
                     <div class="notification-actions">
-                        <a href="${notif.pdf_url}" target="_blank" class="btn btn-pdf">
+                        <a href="${notif.pdf_url}" target="_blank" class="btn btn-pdf" download>
                             <i class="fas fa-file-pdf"></i> PDF බාගත කරන්න
                         </a>
                     </div>
@@ -364,6 +472,18 @@ function scrollToBottom() {
     box.scrollTop = box.scrollHeight;
 }
 
+// Get user IP address
+async function getIP() {
+    try {
+        const response = await fetch('https://api.ipify.org?format=json');
+        const data = await response.json();
+        return data.ip;
+    } catch (error) {
+        console.error('Failed to get IP:', error);
+        return 'unknown';
+    }
+}
+
 async function sendComment() {
     const nameInput = document.getElementById('chatName');
     const msgInput = document.getElementById('chatMessage');
@@ -383,18 +503,45 @@ async function sendComment() {
         return;
     }
     
+    // Check if user is banned
+    try {
+        const { data: bannedUser } = await supabase
+            .from('banned_users')
+            .select('*')
+            .or(`user_name.eq.${name},ip_address.eq.${await getIP()}`)
+            .single();
+        
+        if (bannedUser) {
+            showToast('මෙම පරිශීලකයා තහනම් කර ඇත', 'error');
+            return;
+        }
+    } catch (error) {
+        // User not banned, continue
+    }
+    
     // Save name to localStorage
     localStorage.setItem('chat_user_name', name);
     
     try {
+        // Get user IP
+        const ipAddress = await getIP();
+        
         const { error } = await supabase
             .from('comments')
             .insert([{ 
                 user_name: name, 
-                message: message 
+                message: message,
+                ip_address: ipAddress
             }]);
         
-        if (error) throw error;
+        if (error) {
+            if (error.message.includes('banned')) {
+                showToast('මෙම පරිශීලකයා තහනම් කර ඇත', 'error');
+            } else {
+                throw error;
+            }
+            return;
+        }
         
         // Clear message input
         msgInput.value = '';
@@ -425,15 +572,20 @@ async function initEffects() {
             const snow = data.find(s => s.setting_key === 'snow_effect');
             const confetti = data.find(s => s.setting_key === 'confetti_effect');
             
+            // Check for special dates
+            const now = new Date();
+            const isDecember = now.getMonth() === 11; // December
+            const isNewYear = now.getMonth() === 0 && now.getDate() <= 7; // Early January
+            
             // Stop any existing animation
             if (effectAnimationId) {
                 cancelAnimationFrame(effectAnimationId);
             }
             
-            if (snow && snow.is_enabled) {
+            if (snow && snow.is_enabled && isDecember) {
                 startSnowEffect();
-            } else if (confetti && confetti.is_enabled) {
-                startConfettiEffect();
+            } else if (confetti && confetti.is_enabled && isNewYear) {
+                startNewYearEffect();
             }
         }
     } catch (e) {
@@ -446,31 +598,48 @@ function resizeCanvas() {
     effectCanvas.height = window.innerHeight;
 }
 
-// Snow Effect Implementation
+// Enhanced Snow Effect
 function startSnowEffect() {
     const particles = [];
-    const particleCount = 100;
+    const particleCount = 150;
+    
+    // Clear any existing animation
+    if (effectAnimationId) {
+        cancelAnimationFrame(effectAnimationId);
+    }
     
     // Initialize particles
     for (let i = 0; i < particleCount; i++) {
         particles.push({
             x: Math.random() * effectCanvas.width,
             y: Math.random() * effectCanvas.height,
-            radius: Math.random() * 4 + 1,
-            speed: Math.random() * 1 + 0.5,
-            opacity: Math.random() * 0.5 + 0.3,
-            sway: Math.random() * 0.5 - 0.25
+            radius: Math.random() * 5 + 1,
+            speed: Math.random() * 2 + 0.5,
+            opacity: Math.random() * 0.7 + 0.3,
+            sway: Math.random() * 1 - 0.5,
+            wind: Math.random() * 0.5 - 0.25,
+            color: `rgba(255, 255, 255, ${Math.random() * 0.5 + 0.3})`
         });
     }
     
     function drawSnow() {
-        effectCtx.clearRect(0, 0, effectCanvas.width, effectCanvas.height);
+        // Add subtle gradient background for snow
+        effectCtx.fillStyle = 'rgba(15, 23, 42, 0.1)';
+        effectCtx.fillRect(0, 0, effectCanvas.width, effectCanvas.height);
         
         particles.forEach(particle => {
+            // Draw snowflake with multiple circles for realistic look
             effectCtx.beginPath();
             effectCtx.arc(particle.x, particle.y, particle.radius, 0, Math.PI * 2);
-            effectCtx.fillStyle = `rgba(255, 255, 255, ${particle.opacity})`;
+            effectCtx.fillStyle = particle.color;
             effectCtx.fill();
+            
+            // Add sparkle effect
+            effectCtx.beginPath();
+            effectCtx.arc(particle.x, particle.y, particle.radius/2, 0, Math.PI * 2);
+            effectCtx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+            effectCtx.fill();
+            
             effectCtx.closePath();
         });
         
@@ -481,17 +650,21 @@ function startSnowEffect() {
     function updateSnow() {
         particles.forEach(particle => {
             particle.y += particle.speed;
-            particle.x += particle.sway;
+            particle.x += particle.sway + particle.wind;
+            
+            // Add slight rotation
+            particle.sway += Math.sin(Date.now() / 1000 + particle.x) * 0.1;
             
             // Reset if out of bounds
             if (particle.y > effectCanvas.height) {
                 particle.y = -10;
                 particle.x = Math.random() * effectCanvas.width;
+                particle.speed = Math.random() * 2 + 0.5;
             }
-            if (particle.x > effectCanvas.width) {
-                particle.x = 0;
-            } else if (particle.x < 0) {
-                particle.x = effectCanvas.width;
+            if (particle.x > effectCanvas.width + 10) {
+                particle.x = -10;
+            } else if (particle.x < -10) {
+                particle.x = effectCanvas.width + 10;
             }
         });
     }
@@ -499,11 +672,16 @@ function startSnowEffect() {
     drawSnow();
 }
 
-// Confetti Effect Implementation
-function startConfettiEffect() {
+// Happy New Year Confetti Effect
+function startNewYearEffect() {
     const particles = [];
-    const colors = ['#667eea', '#764ba2', '#38ef7d', '#ff6b6b', '#ffb74d', '#4cc9f0'];
-    const particleCount = 150;
+    const colors = ['#FFD700', '#FF6B6B', '#4ECDC4', '#FF9FF3', '#54A0FF', '#00D2D3'];
+    const particleCount = 200;
+    
+    // Clear any existing animation
+    if (effectAnimationId) {
+        cancelAnimationFrame(effectAnimationId);
+    }
     
     // Initialize particles
     for (let i = 0; i < particleCount; i++) {
@@ -511,31 +689,50 @@ function startConfettiEffect() {
             x: Math.random() * effectCanvas.width,
             y: Math.random() * effectCanvas.height - effectCanvas.height,
             color: colors[Math.floor(Math.random() * colors.length)],
-            size: Math.random() * 10 + 5,
-            speed: Math.random() * 3 + 1,
+            size: Math.random() * 12 + 3,
+            speed: Math.random() * 5 + 2,
             angle: Math.random() * 360,
-            rotationSpeed: Math.random() * 5 - 2.5,
-            sway: Math.random() * 2 - 1
+            rotationSpeed: Math.random() * 8 - 4,
+            sway: Math.random() * 3 - 1.5,
+            gravity: 0.05,
+            opacity: Math.random() * 0.8 + 0.2,
+            shape: Math.random() > 0.5 ? 'circle' : 'rect'
         });
     }
     
     function drawConfetti() {
-        effectCtx.clearRect(0, 0, effectCanvas.width, effectCanvas.height);
+        // Semi-transparent overlay for trailing effect
+        effectCtx.fillStyle = 'rgba(15, 23, 42, 0.1)';
+        effectCtx.fillRect(0, 0, effectCanvas.width, effectCanvas.height);
         
         particles.forEach(particle => {
             effectCtx.save();
             effectCtx.translate(particle.x, particle.y);
             effectCtx.rotate(particle.angle * Math.PI / 180);
-            effectCtx.fillStyle = particle.color;
+            effectCtx.globalAlpha = particle.opacity;
             
-            // Draw confetti piece (rectangle)
-            effectCtx.fillRect(-particle.size/2, -particle.size/2, particle.size, particle.size);
-            
-            // Add some sparkle
-            effectCtx.beginPath();
-            effectCtx.arc(0, 0, particle.size/3, 0, Math.PI * 2);
-            effectCtx.fillStyle = 'rgba(255, 255, 255, 0.5)';
-            effectCtx.fill();
+            if (particle.shape === 'circle') {
+                // Draw circle confetti
+                effectCtx.beginPath();
+                effectCtx.arc(0, 0, particle.size/2, 0, Math.PI * 2);
+                effectCtx.fillStyle = particle.color;
+                effectCtx.fill();
+                
+                // Add highlight
+                effectCtx.beginPath();
+                effectCtx.arc(-particle.size/4, -particle.size/4, particle.size/4, 0, Math.PI * 2);
+                effectCtx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+                effectCtx.fill();
+            } else {
+                // Draw rectangle confetti
+                effectCtx.fillStyle = particle.color;
+                effectCtx.fillRect(-particle.size/2, -particle.size/2, particle.size, particle.size);
+                
+                // Add pattern
+                effectCtx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+                effectCtx.lineWidth = 1;
+                effectCtx.strokeRect(-particle.size/2, -particle.size/2, particle.size, particle.size);
+            }
             
             effectCtx.restore();
         });
@@ -549,16 +746,29 @@ function startConfettiEffect() {
             particle.y += particle.speed;
             particle.x += particle.sway;
             particle.angle += particle.rotationSpeed;
+            particle.speed += particle.gravity;
             
-            // Reset if out of bounds
-            if (particle.y > effectCanvas.height) {
+            // Add wind effect
+            particle.sway += Math.sin(Date.now() / 1000) * 0.1;
+            
+            // Fade out at bottom
+            if (particle.y > effectCanvas.height * 0.8) {
+                particle.opacity *= 0.98;
+            }
+            
+            // Reset if out of bounds or faded out
+            if (particle.y > effectCanvas.height || particle.opacity < 0.05) {
                 particle.y = -20;
                 particle.x = Math.random() * effectCanvas.width;
+                particle.speed = Math.random() * 5 + 2;
+                particle.opacity = Math.random() * 0.8 + 0.2;
+                particle.color = colors[Math.floor(Math.random() * colors.length)];
             }
-            if (particle.x > effectCanvas.width) {
-                particle.x = 0;
-            } else if (particle.x < 0) {
-                particle.x = effectCanvas.width;
+            
+            if (particle.x > effectCanvas.width + 20) {
+                particle.x = -20;
+            } else if (particle.x < -20) {
+                particle.x = effectCanvas.width + 20;
             }
         });
     }
@@ -585,11 +795,11 @@ function showToast(message, type = 'success') {
         position: fixed;
         top: 20px;
         right: 20px;
-        background: var(--nt-card);
-        color: var(--nt-text);
+        background: #1e293b;
+        color: #f8fafc;
         padding: 15px 20px;
         border-radius: 12px;
-        border-left: 4px solid ${type === 'success' ? 'var(--pk-success)' : type === 'error' ? 'var(--pk-danger)' : 'var(--pk-warning)'};
+        border-left: 4px solid ${type === 'success' ? '#4cc9f0' : type === 'error' ? '#f72585' : '#f8961e'};
         box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
         display: flex;
         align-items: center;
@@ -616,9 +826,49 @@ function showToast(message, type = 'success') {
     }, 3000);
 }
 
+function addAnimationStyles() {
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        @keyframes fadeOut {
+            from {
+                opacity: 1;
+                transform: translateX(0);
+            }
+            to {
+                opacity: 0;
+                transform: translateX(100%);
+            }
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    `;
+    document.head.appendChild(style);
+}
+
 // ==========================================
 // EXPORT FUNCTIONS TO WINDOW OBJECT
 // ==========================================
 window.openNotifModal = openNotifModal;
 window.closeNotifModal = closeNotifModal;
 window.sendComment = sendComment;
+window.getIP = getIP;
